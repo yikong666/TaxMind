@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 from typing import Protocol
 
-from pymilvus import DataType, MilvusClient
+from pymilvus import AnnSearchRequest, DataType, MilvusClient, WeightedRanker
 
 
 @dataclass(frozen=True)
@@ -20,8 +20,29 @@ class VectorRecord:
     metadata: dict[str, str | int]
 
 
+@dataclass(frozen=True)
+class SearchHit:
+    id: str
+    score: float
+    child_id: int
+    parent_id: int
+    document_id: int
+    text: str
+    parent_content: str
+    metadata: dict[str, str | int]
+
+
 class VectorStore(Protocol):
     def replace_document(self, document_id: int, records: list[VectorRecord]) -> None: ...
+
+    def hybrid_search(
+        self,
+        dense: list[float],
+        sparse: dict[int, float],
+        filter_expression: str,
+        top_k: int,
+        candidate_k: int,
+    ) -> list[SearchHit]: ...
 
 
 class MilvusVectorStore:
@@ -87,3 +108,53 @@ class MilvusVectorStore:
                 ],
             )
             self.client.flush(self.collection)
+
+    def hybrid_search(
+        self,
+        dense: list[float],
+        sparse: dict[int, float],
+        filter_expression: str,
+        top_k: int,
+        candidate_k: int,
+    ) -> list[SearchHit]:
+        requests = [
+            AnnSearchRequest(
+                [dense],
+                "dense_vector",
+                {"metric_type": "IP", "params": {}},
+                limit=candidate_k,
+                expr=filter_expression,
+            ),
+            AnnSearchRequest(
+                [sparse],
+                "sparse_vector",
+                {"metric_type": "IP", "params": {}},
+                limit=candidate_k,
+                expr=filter_expression,
+            ),
+        ]
+        output_fields = [
+            "child_id", "parent_id", "document_id", "text", "parent_content",
+            "region", "doc_no", "tax_type", "taxpayer_type", "effective_start",
+            "effective_end", "policy_status", "source_url",
+        ]
+        result = self.client.hybrid_search(
+            self.collection,
+            requests,
+            WeightedRanker(0.6, 0.4),
+            limit=top_k,
+            output_fields=output_fields,
+        )[0]
+        return [
+            SearchHit(
+                id=str(hit["id"]),
+                score=float(hit["distance"]),
+                child_id=int(hit["entity"]["child_id"]),
+                parent_id=int(hit["entity"]["parent_id"]),
+                document_id=int(hit["entity"]["document_id"]),
+                text=str(hit["entity"]["text"]),
+                parent_content=str(hit["entity"]["parent_content"]),
+                metadata={field: hit["entity"].get(field, "") for field in output_fields[5:]},
+            )
+            for hit in result
+        ]

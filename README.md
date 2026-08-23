@@ -55,11 +55,16 @@ npm run dev
 - `GET /api/v1/documents/{id}/chunks`：预览标题层级、父块和子块
 - `PUT /api/v1/documents/{id}/policy-metadata`：维护政策文号、地区和有效期等元数据
 - `POST /api/v1/documents/{id}/index`：使用 BGE-M3 生成 Dense/Sparse 向量并写入 Milvus
+- `POST /api/v1/retrieval/search`：按知识库、地区、有效期和纳税人条件执行混合检索
 
 文档上传支持 PDF、DOC/DOCX、PPT/PPTX、Markdown、TXT、HTML 和常见图片格式，
 默认单文件上限为 50MB。PDF、DOCX、PPTX、Markdown、TXT、HTML 和图片可直接解析，
 图片使用 OCR 提取文字；旧版 DOC/PPT 文件需先转换为 DOCX/PPTX。政策类文档只有在
 解析完成且必填政策元数据完整后才进入可检索状态，内部资料解析完成后即可检索。
+
+混合检索使用 BGE-M3 Dense/Sparse 两路召回和 Milvus WeightedRanker。当前政策检索仅
+允许 `active` 状态且在查询日期有效的政策；地方查询可同时使用全国政策和本地区政策，
+全国查询不会混入地方政策。Child Chunk 参与召回，接口返回对应 Parent Chunk 和引用元数据。
 
 ## 测试
 
