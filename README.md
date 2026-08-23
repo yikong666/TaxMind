@@ -57,6 +57,8 @@ npm run dev
 - `POST /api/v1/documents/{id}/index`：使用 BGE-M3 生成 Dense/Sparse 向量并写入 Milvus
 - `POST /api/v1/retrieval/search`：按知识库、地区、有效期和纳税人条件执行混合检索
 - `POST /api/v1/query/understand`：使用 LLM Structured Output 提取意图并判断信息完整性与风险
+- `POST/GET/PATCH/DELETE /api/v1/faqs`：管理高频税务 FAQ
+- `POST /api/v1/faqs/route/match`：执行 Redis 精确缓存与 MySQL BM25 优先路由
 
 文档上传支持 PDF、DOC/DOCX、PPT/PPTX、Markdown、TXT、HTML 和常见图片格式，
 默认单文件上限为 50MB。PDF、DOCX、PPTX、Markdown、TXT、HTML 和图片可直接解析，
@@ -70,6 +72,9 @@ npm run dev
 
 问题理解使用 `qwen3-max + 中文 Prompt`，不训练 BERT。系统会提取地区、纳税人类型、
 税种、所属期、金额和业务类型；信息不足时先追问，违法违规操作请求会被保守风险规则拦截。
+
+FAQ 路由只使用当前启用、地区匹配且处于有效期内的数据。达到 BM25 阈值时直接返回
+标准答案和文号来源，低于阈值时通过 `continue_to_rag=true` 进入后续 RAG 链路。
 
 ## 测试
 

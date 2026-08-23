@@ -68,6 +68,7 @@ class Settings(BaseSettings):
     default_top_k: int = 5
     default_history_rounds: int = 5
     faq_bm25_threshold: float = 0.85
+    faq_cache_ttl_seconds: int = 3600
 
     @property
     def database_url(self) -> str:
@@ -98,6 +99,7 @@ class Settings(BaseSettings):
         "reranker_batch_size",
         "retrieval_candidate_k",
         "llm_timeout_seconds",
+        "faq_cache_ttl_seconds",
     )
     @classmethod
     def validate_positive_integer(cls, value: int) -> int:
