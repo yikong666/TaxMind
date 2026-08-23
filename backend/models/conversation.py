@@ -45,4 +45,6 @@ class ChatMessage(TimestampMixin, Base):
     citations: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
     error_message: Mapped[str | None] = mapped_column(Text)
     history_rounds: Mapped[int | None] = mapped_column(Integer)
+    retrieval_strategy: Mapped[str | None] = mapped_column(String(30))
+    retrieval_queries: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
     conversation: Mapped[Conversation] = relationship(back_populates="messages")

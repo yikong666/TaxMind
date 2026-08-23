@@ -24,6 +24,8 @@ class MessageData(BaseModel):
     model_name: str | None
     citations: list
     error_message: str | None
+    retrieval_strategy: str | None
+    retrieval_queries: list
     created_at: datetime
 
 

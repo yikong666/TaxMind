@@ -12,13 +12,16 @@ ANSWER_PROMPT = """你是 TaxMind 财税助手。只能依据给定上下文回�
 
 # 编排器以事件字典输出，HTTP 层只负责转换为 SSE 文本。
 class RagChatService:
-    def __init__(self, conversations, understanding, faq, retrieval, llm, reviews=None):
+    def __init__(
+        self, conversations, understanding, faq, retrieval, llm, reviews=None, rewriter=None
+    ):
         self.conversations = conversations
         self.understanding = understanding
         self.faq = faq
         self.retrieval = retrieval
         self.llm = llm
         self.reviews = reviews
+        self.rewriter = rewriter
 
     def stream(self, conversation, owner_id, request):
         # 在写入本轮消息前截取历史，避免把当前空白回答带入模型上下文。
@@ -63,6 +66,20 @@ class RagChatService:
                 return
             hits = []
             if request.knowledge_base_ids:
+                retrieval_queries = [request.query]
+                if self.rewriter is not None:
+                    plan = self.rewriter.rewrite(request.query, understood, history)
+                    retrieval_queries = plan.retrieval_queries
+                    assistant.retrieval_strategy = plan.strategy.value
+                    assistant.retrieval_queries = retrieval_queries
+                    yield {
+                        "event": "status",
+                        "data": {
+                            "stage": "query_rewrite",
+                            "strategy": plan.strategy.value,
+                            "fallback_used": plan.fallback_used,
+                        },
+                    }
                 hits = self.retrieval.search(
                     owner_id=owner_id,
                     query=request.query,
@@ -72,6 +89,7 @@ class RagChatService:
                     tax_type=understood.tax_type,
                     taxpayer_type=understood.taxpayer_type,
                     top_k=5,
+                    retrieval_queries=retrieval_queries,
                 )
             if not hits:
                 yield from self._complete(

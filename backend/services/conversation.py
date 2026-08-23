@@ -51,5 +51,6 @@ class ConversationService:
                 model_name=model,
                 history_rounds=rounds,
                 citations=[],
+                retrieval_queries=[],
             )
         )

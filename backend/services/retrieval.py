@@ -41,11 +41,15 @@ class RetrievalService:
         tax_type: str | None,
         taxpayer_type: str | None,
         top_k: int,
+        retrieval_queries: list[str] | None = None,
     ) -> list[SearchHit]:
         for knowledge_base_id in knowledge_base_ids:
             if self.repository.get(knowledge_base_id, owner_id) is None:
                 raise BusinessError("知识库不存在或无权访问", "KNOWLEDGE_BASE_NOT_FOUND", 404)
-        vector = self.embedding.embed([query])[0]
+        queries = list(dict.fromkeys(retrieval_queries or [query]))
+        vectors = self.embedding.embed(queries)
+        if len(vectors) != len(queries):
+            raise BusinessError("Query 向量化结果数量错误", "QUERY_EMBEDDING_FAILED", 500)
         expression = build_metadata_filter(
             owner_id=owner_id,
             knowledge_base_ids=knowledge_base_ids,
@@ -55,9 +59,17 @@ class RetrievalService:
             taxpayer_type=taxpayer_type,
         )
         candidate_limit = max(top_k, self.candidate_k)
-        hits = self.vector_store.hybrid_search(
-            vector.dense, vector.sparse, expression, candidate_limit, candidate_limit
-        )
+        result_groups = [
+            self.vector_store.hybrid_search(
+                vector.dense,
+                vector.sparse,
+                expression,
+                candidate_limit,
+                candidate_limit,
+            )
+            for vector in vectors
+        ]
+        hits = self._fuse_hits(result_groups)
         if not hits:
             return []
         try:
@@ -66,10 +78,7 @@ class RetrievalService:
             if len(scores) != len(hits):
                 raise ValueError("Reranker 分数数量与候选数量不一致")
             ranked = sorted(
-                (
-                    replace(hit, rerank_score=score)
-                    for hit, score in zip(hits, scores, strict=True)
-                ),
+                (replace(hit, rerank_score=score) for hit, score in zip(hits, scores, strict=True)),
                 key=lambda hit: hit.rerank_score or 0.0,
                 reverse=True,
             )
@@ -92,3 +101,20 @@ class RetrievalService:
             len(unique_hits),
         )
         return unique_hits
+
+    @staticmethod
+    def _fuse_hits(result_groups: list[list[SearchHit]]) -> list[SearchHit]:
+        if len(result_groups) == 1:
+            return result_groups[0]
+        # RRF 不依赖不同 Query 分数的绝对量纲，适合稳定融合多路召回排名。
+        scores: dict[str, float] = {}
+        items: dict[str, SearchHit] = {}
+        for group in result_groups:
+            for rank, hit in enumerate(group, start=1):
+                scores[hit.id] = scores.get(hit.id, 0.0) + 1.0 / (60 + rank)
+                items.setdefault(hit.id, hit)
+        return sorted(
+            (replace(items[key], hybrid_score=score) for key, score in scores.items()),
+            key=lambda hit: hit.hybrid_score,
+            reverse=True,
+        )

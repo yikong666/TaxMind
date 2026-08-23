@@ -89,6 +89,11 @@ FAQ 路由只使用当前启用、地区匹配且处于有效期内的数据。�
 无可靠上下文以及 HIGH/PROHIBITED 风险回答会自动进入人工审核队列；用户也可以主动
 转人工。工单严格按照 `pending → processing → resolved` 流转，解决时必须填写处理结果。
 
+FAQ 未命中且需要知识库检索时，系统使用 LLM 在 Direct、历史会话改写、关键词扩写、
+Query Simplification、MultiQuery 和 HyDE 中选择策略。原始问题始终保留，多路 Query
+使用 RRF 融合后再交给 Reranker；改写不得新增金额、期间等数字事实，结构异常或模型
+不可用时自动降级到 Direct Retrieval。实际策略和检索 Query 会随 AI 消息保存供评估。
+
 ## 测试
 
 ```powershell

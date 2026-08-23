@@ -29,6 +29,7 @@ from backend.schemas.conversation import (
 )
 from backend.services.conversation import ConversationService
 from backend.services.faq import FaqService
+from backend.services.query_rewrite import QueryRewriteService
 from backend.services.query_understanding import QueryUnderstandingService
 from backend.services.rag_chat import RagChatService
 from backend.services.retrieval import RetrievalService
@@ -114,6 +115,7 @@ def stream_chat(
         retrieval,
         get_llm_client(),
         ReviewService(ReviewRepository(session)),
+        QueryRewriteService(get_llm_client()),
     )
 
     def events():

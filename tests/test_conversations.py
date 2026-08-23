@@ -13,6 +13,14 @@ from tests.test_knowledge_bases import authenticate, create_knowledge_base
 # 流式接口在单元测试中使用确定性 LLM，避免网络波动和模型费用影响回归结果。
 class FakeLlm:
     def complete_json(self, system_prompt: str, user_text: str) -> str:
+        if "检索 Query 改写器" in system_prompt:
+            return json.dumps(
+                {
+                    "strategy": "expansion",
+                    "queries": ["小型微利企业所得税优惠政策"],
+                    "hypothetical_document": None,
+                }
+            )
         risk = "PROHIBITED" if "逃税" in user_text else "LOW"
         return json.dumps(
             {
@@ -190,3 +198,8 @@ def test_rag_sse_streams_model_tokens_and_policy_citation(client: TestClient, mo
     assert answer["content"] == "测试回答"
     assert answer["model_name"] is None
     assert answer["citations"][0]["document_id"] == 1
+    assert answer["retrieval_strategy"] == "expansion"
+    assert answer["retrieval_queries"] == [
+        "小微企业有哪些所得税优惠？",
+        "小型微利企业所得税优惠政策",
+    ]
