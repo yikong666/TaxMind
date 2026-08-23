@@ -1,48 +1,93 @@
-# TaxMind
-这是一个面向代理记账机构、财税服务人员和小微企业服务场景的企业级 RAG 智能财税知识问答系统。
+# TaxMind 税智通
 
-## 技术架构
+TaxMind 是面向代理记账机构、财税服务人员和小微企业服务场景的企业级 RAG 智能财税
+知识问答系统。系统围绕政策知识库运营、时效性检索、可追溯问答、风险门禁和人工复核构建，
+回答仅使用当前用户有权访问且在查询日期有效的政策依据。
 
-Vue 3 + Element Plus 提供智能问答和知识运营页面；FastAPI 提供 JWT 多租户业务接口；
-MySQL 保存业务数据，Redis 缓存 FAQ，MinIO 保存私有原文，Milvus 执行 BGE-M3
-Dense/Sparse Hybrid Search，候选结果经 bge-reranker-v2-m3 重排后交给 qwen3-max。
-完整链路见 `docs/architecture.md`。
+## 核心能力
+
+- LLM + 中文 Prompt 完成意图识别、信息完整性判断和风险分级，不训练 BERT 分类模型。
+- BGE-M3 Dense/Sparse 混合召回、RRF 多 Query 融合和 BGE Reranker 重排序。
+- Parent-Child Chunk、政策地区/时效过滤、来源文号与原文引用。
+- FAQ 优先路由、Query Rewrite、SSE 流式回答和无依据拒答。
+- 多租户知识库、私有 MinIO 文档、JWT 鉴权、认证限流和上传内容安全校验。
+- 用户反馈、人工工单、官方政策导入和端到端专项评测。
+
+## 系统架构
+
+前端采用 Vue 3、TypeScript、Vite 和 Element Plus；后端采用 FastAPI、SQLAlchemy 与
+Alembic。MySQL 保存业务数据，Redis 提供缓存、验证码和限流，MinIO 保存私有原文，
+Milvus 保存可重建的检索向量，通义千问负责结构化理解、Query 改写和答案生成。
+
+详细组件边界和数据流见 [系统架构文档](docs/architecture.md)。
+
+## 文档导航
+
+| 文档 | 位置 | 用途 |
+| --- | --- | --- |
+| 项目说明 | [`README.md`](README.md) | 项目定位、快速开始、研发和文档入口 |
+| 系统架构 | [`docs/architecture.md`](docs/architecture.md) | 组件职责、RAG 链路和数据边界 |
+| API 接口 | [`docs/api.md`](docs/api.md) | 鉴权、接口清单、请求响应、SSE 与错误处理 |
+| 部署运维 | [`docs/deployment.md`](docs/deployment.md) | 环境初始化、生产安全、备份、监控和验收 |
+| 项目任务 | [`TaxMind_项目任务描述.md`](TaxMind_项目任务描述.md) | 项目需求、功能范围和交付目标 |
+| 开发规范 | [`Codex.md`](Codex.md) | 开发流程、测试、日志和验收规范 |
+| 在线 OpenAPI | `http://127.0.0.1:8000/docs` | 启动后查看实时 Swagger 文档 |
+
+## 目录结构
+
+```text
+TaxMind/
+├── backend/        FastAPI 接口、业务服务、模型、仓储和数据库迁移
+├── frontend/       Vue 3 管理端与智能问答界面
+├── rag/            意图理解、改写、Embedding、检索、重排和评测
+├── scripts/        初始化、启动、模型/数据下载、导入、评测和就绪检查
+├── data/           可版本化清单与评测数据；原始数据和模型不提交
+├── docs/           架构、API 和部署运维文档
+├── tests/          pytest 单元测试与业务集成测试
+└── docker-compose.yml
+```
 
 ## 环境要求
 
+- Windows 10/11 或兼容的 Linux 开发环境
 - Python 3.12 或 3.13
-- uv
+- [uv](https://docs.astral.sh/uv/)
 - Node.js 22+
-- Docker Desktop
+- Docker Desktop / Docker Engine + Compose
+- 可用的 DashScope API Key
 
-## 本地启动
+## 快速开始
 
-推荐执行一键初始化。首次运行会创建 `.env` 并要求先替换安全配置：
+1. 创建配置文件：
+
+   ```powershell
+   Copy-Item .env.example .env
+   ```
+
+2. 修改 `.env`，至少配置 MySQL、Redis、MinIO、JWT 强随机密钥和
+   `DASHSCOPE_API_KEY`。不要提交 `.env`。
+
+3. 执行一键初始化与启动：
+
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File scripts/setup.ps1
+   powershell -ExecutionPolicy Bypass -File scripts/start.ps1
+   ```
+
+首次初始化会安装依赖、启动基础服务、执行数据库迁移、下载模型和官方公开数据，并运行
+就绪检查。更细的手动部署步骤和生产要求见 [部署运维文档](docs/deployment.md)。
+
+## 本地开发
+
+单独启动后端：
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts/setup.ps1
-powershell -ExecutionPolicy Bypass -File scripts/start.ps1
-```
-
-也可手动执行：
-
-```powershell
-Copy-Item .env.example .env
 uv sync
-docker compose up -d
 uv run alembic upgrade head
-uv run python scripts/download_models.py
-uv run python scripts/download_official_data.py
-uv run python scripts/check_readiness.py
-```
-
-启动后端：
-
-```powershell
 uv run uvicorn backend.main:app --reload --port 8000
 ```
 
-启动前端：
+单独启动前端：
 
 ```powershell
 Set-Location frontend
@@ -50,78 +95,57 @@ npm install
 npm run dev
 ```
 
-后端接口文档位于 `http://127.0.0.1:8000/docs`，前端位于
-`http://127.0.0.1:5173`，MinIO 管理控制台位于 `http://127.0.0.1:9001`。
+默认访问地址：
 
-当前账号模块提供以下接口：
+- 前端：`http://127.0.0.1:5173`
+- 后端：`http://127.0.0.1:8000`
+- Swagger：`http://127.0.0.1:8000/docs`
+- MinIO 控制台：`http://127.0.0.1:9001`
 
-- `GET /api/v1/auth/captcha`：获取一次性图形验证码
-- `POST /api/v1/auth/register`：注册账号
-- `POST /api/v1/auth/login`：登录并获取 JWT
-- `POST /api/v1/knowledge-bases`：创建知识库
-- `GET /api/v1/knowledge-bases`：查看当前用户的知识库
-- `GET/PATCH/DELETE /api/v1/knowledge-bases/{id}`：查看、修改或删除知识库
-- `POST /api/v1/knowledge-bases/{id}/documents`：向私有 MinIO 桶批量上传文档
-- `POST /api/v1/documents/{id}/parse`：解析文档并生成 Parent-Child Chunk
-- `GET /api/v1/documents/{id}/chunks`：预览标题层级、父块和子块
-- `PUT /api/v1/documents/{id}/policy-metadata`：维护政策文号、地区和有效期等元数据
-- `POST /api/v1/documents/{id}/index`：使用 BGE-M3 生成 Dense/Sparse 向量并写入 Milvus
-- `GET /api/v1/documents/{id}/vector-status`：汇总待索引、已索引和失败 Chunk 数量
-- `PATCH/DELETE /api/v1/chunks/parents/{id}`：编辑或删除 Parent Chunk
-- `PATCH/DELETE /api/v1/chunks/children/{id}`：编辑或删除 Child Chunk
-- `POST /api/v1/retrieval/search`：按知识库、地区、有效期和纳税人条件执行混合检索
-- `POST /api/v1/query/understand`：使用 LLM Structured Output 提取意图并判断信息完整性与风险
-- `POST/GET/PATCH/DELETE /api/v1/faqs`：管理高频税务 FAQ
-- `POST /api/v1/faqs/route/match`：执行 Redis 精确缓存与 MySQL BM25 优先路由
-- `POST/GET /api/v1/conversations`：创建或查看当前用户的问答会话
-- `GET/PATCH/DELETE /api/v1/conversations/{id}`：查看聊天记录、重命名或删除会话
-- `POST /api/v1/conversations/{id}/messages/stream`：通过 SSE 获取 RAG 流式回答
-- `POST /api/v1/messages/{id}/feedback`：对 AI 回答点赞或点踩并填写原因
-- `POST /api/v1/messages/{id}/handoff`：将指定回答主动转交人工审核
-- `GET /api/v1/tickets`、`GET/PATCH /api/v1/tickets/{id}`：查看工单并执行状态流转
+所有业务接口使用 `/api/v1` 前缀。完整接口说明已从 README 分离至
+[API 接口文档](docs/api.md)。
 
-文档上传支持 PDF、DOC/DOCX、PPT/PPTX、Markdown、TXT、HTML 和常见图片格式，
-默认单文件上限为 50MB。PDF、DOCX、PPTX、Markdown、TXT、HTML 和图片可直接解析，
-图片使用 OCR 提取文字；旧版 DOC/PPT 文件需先转换为 DOCX/PPTX。政策类文档只有在
-解析完成且必填政策元数据完整后才进入可检索状态，内部资料解析完成后即可检索。
-编辑或删除任意 Chunk 会先清理该文档的旧 Milvus 向量，并将剩余 Child Chunk 标记为
-`pending`；再次调用文档索引接口即可整篇重新索引，避免旧内容继续进入问答上下文。
+## 数据、模型与评测
 
-混合检索使用 BGE-M3 Dense/Sparse 两路召回和 Milvus WeightedRanker，再由
-`bge-reranker-v2-m3` 对 Top-N 候选重排序并按 Parent Chunk 去重。当前政策检索仅
-允许 `active` 状态且在查询日期有效的政策；地方查询可同时使用全国政策和本地区政策，
-全国查询不会混入地方政策。Child Chunk 参与召回，接口返回对应 Parent Chunk 和引用元数据。
+```powershell
+uv run python scripts/download_models.py
+uv run python scripts/download_official_data.py
+uv run python scripts/import_official_data.py
+uv run python scripts/evaluate_rag.py
+```
 
-问题理解使用 `qwen3-max + 中文 Prompt`，不训练 BERT。系统会提取地区、纳税人类型、
-税种、所属期、金额和业务类型；信息不足时先追问，违法违规操作请求会被保守风险规则拦截。
+导入和评测前需要设置 `TAXMIND_ACCESS_TOKEN` 与 `TAXMIND_KNOWLEDGE_BASE_ID`。
+专项评测集位于 [`data/evaluation/taxmind_mvp_50.jsonl`](data/evaluation/taxmind_mvp_50.jsonl)，
+包含25个独立场景的50种问题表达；报告默认写入 `data/evaluation/latest_report.json`。
 
-FAQ 路由只使用当前启用、地区匹配且处于有效期内的数据。达到 BM25 阈值时直接返回
-标准答案和文号来源，低于阈值时通过 `continue_to_rag=true` 进入后续 RAG 链路。
-
-流式问答依次执行问题理解、风险门禁、FAQ、混合检索、重排序和 Parent Context 构建，
-最终由通义千问生成仅基于检索依据的结构化答复。SSE 事件包括 `session`、`status`、
-`token`、`citation`、`done` 和 `error`；用户问题、回答状态、路由来源、模型参数及引用
-会写入 MySQL。没有可靠上下文时系统明确提示补充信息，不允许模型凭空生成政策文号。
-无可靠上下文以及 HIGH/PROHIBITED 风险回答会自动进入人工审核队列；用户也可以主动
-转人工。工单严格按照 `pending → processing → resolved` 流转，解决时必须填写处理结果。
-
-FAQ 未命中且需要知识库检索时，系统使用 LLM 在 Direct、历史会话改写、关键词扩写、
-Query Simplification、MultiQuery 和 HyDE 中选择策略。原始问题始终保留，多路 Query
-使用 RRF 融合后再交给 Reranker；改写不得新增金额、期间等数字事实，结构异常或模型
-不可用时自动降级到 Direct Retrieval。实际策略和检索 Query 会随 AI 消息保存供评估。
-
-## 测试
+## 测试与代码质量
 
 ```powershell
 uv run python -m pytest tests/ -v
-uv run ruff check backend rag tests config.py
+uv run ruff check backend rag scripts tests
+Set-Location frontend
+npm run build
 ```
 
-## 官方数据与评测
+新功能必须同步增加 pytest 测试；日志同时写入控制台与 `LOG_FILE` 指定文件。详细研发约束见
+[`Codex.md`](Codex.md)。
 
-首批 5 份官方资料、来源 URL、SHA-256 和抓取时间位于 `data/`。设置
-`TAXMIND_ACCESS_TOKEN` 与 `TAXMIND_KNOWLEDGE_BASE_ID` 后运行
-`uv run python scripts/import_official_data.py` 可通过正式 API 入库。首版评测集包含 50 条问题，
-覆盖检索排名、文号、地区、时效和风险等级指标。
+## 安全与运维
 
-生产部署、备份与验收说明见 `docs/deployment.md`。
+- Docker Compose 不提供可直接运行的数据库、Redis 和 MinIO 弱口令兜底。
+- 基础服务默认仅绑定宿主机回环地址；生产环境仅通过 TLS 反向代理开放前端和 API。
+- 知识库、文档、向量过滤、FAQ、会话和工单均执行用户级数据隔离。
+- 上传文件执行扩展名、真实格式和 Office 容器安全校验；MinIO 桶保持私有。
+- 生产环境需要建立 MySQL、MinIO、etcd/Milvus 备份、日志采集和健康检查告警。
+
+完整上线、备份恢复和验收步骤见 [部署运维文档](docs/deployment.md)。
+
+## 项目状态与边界
+
+当前仓库完成 TaxMind MVP 的前后端、RAG 主链路、知识运营、风险控制、人工复核、部署脚本
+和离线评测能力。财税回答用于信息辅助，不替代税务机关口径或持证专业人员的个案意见；
+高风险、依据不足或政策冲突场景应进入人工复核。
+
+## License
+
+本项目使用 [MIT License](LICENSE)。
