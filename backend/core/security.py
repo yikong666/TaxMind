@@ -4,6 +4,7 @@ from datetime import UTC, datetime, timedelta
 from argon2 import PasswordHasher
 from argon2.exceptions import InvalidHashError, VerifyMismatchError
 from jose import jwt
+from jose.exceptions import JWTError
 
 from backend.core.config import Settings
 
@@ -31,3 +32,17 @@ def create_access_token(user_id: int, settings: Settings) -> tuple[str, int]:
         algorithm=settings.jwt_algorithm,
     )
     return token, int(expires_delta.total_seconds())
+
+
+def decode_access_token(token: str, settings: Settings) -> int | None:
+    try:
+        payload = jwt.decode(
+            token,
+            settings.jwt_secret_key.get_secret_value(),
+            algorithms=[settings.jwt_algorithm],
+        )
+        if payload.get("type") != "access":
+            return None
+        return int(payload["sub"])
+    except (JWTError, KeyError, TypeError, ValueError):
+        return None

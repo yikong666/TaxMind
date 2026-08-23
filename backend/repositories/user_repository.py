@@ -12,6 +12,9 @@ class UserRepository:
     def get_by_username(self, username: str) -> User | None:
         return self.session.scalar(select(User).where(User.username == username))
 
+    def get_by_id(self, user_id: int) -> User | None:
+        return self.session.get(User, user_id)
+
     def create(self, username: str, password_hash: str) -> User:
         user = User(username=username, password_hash=password_hash)
         self.session.add(user)

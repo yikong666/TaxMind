@@ -46,6 +46,13 @@ npm run dev
 - `GET /api/v1/auth/captcha`：获取一次性图形验证码
 - `POST /api/v1/auth/register`：注册账号
 - `POST /api/v1/auth/login`：登录并获取 JWT
+- `POST /api/v1/knowledge-bases`：创建知识库
+- `GET /api/v1/knowledge-bases`：查看当前用户的知识库
+- `GET/PATCH/DELETE /api/v1/knowledge-bases/{id}`：查看、修改或删除知识库
+- `POST /api/v1/knowledge-bases/{id}/documents`：向私有 MinIO 桶批量上传文档
+
+文档上传支持 PDF、DOC/DOCX、PPT/PPTX、Markdown、TXT、HTML 和常见图片格式，
+默认单文件上限为 50MB。上传成功后状态为 `pending`，后续解析任务会消费该状态。
 
 ## 测试
 

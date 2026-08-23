@@ -45,6 +45,7 @@ class Settings(BaseSettings):
     minio_secret_key: SecretStr = SecretStr("")
     minio_bucket: str = "taxmind-documents"
     minio_secure: bool = False
+    max_upload_size_mb: int = 50
     dashscope_api_key: SecretStr = SecretStr("")
     dashscope_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
     llm_model: str = "qwen3-max"
@@ -75,6 +76,7 @@ class Settings(BaseSettings):
         "default_history_rounds",
         "access_token_expire_minutes",
         "captcha_expire_seconds",
+        "max_upload_size_mb",
     )
     @classmethod
     def validate_positive_integer(cls, value: int) -> int:
