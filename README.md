@@ -59,6 +59,9 @@ npm run dev
 - `POST /api/v1/query/understand`：使用 LLM Structured Output 提取意图并判断信息完整性与风险
 - `POST/GET/PATCH/DELETE /api/v1/faqs`：管理高频税务 FAQ
 - `POST /api/v1/faqs/route/match`：执行 Redis 精确缓存与 MySQL BM25 优先路由
+- `POST/GET /api/v1/conversations`：创建或查看当前用户的问答会话
+- `GET/PATCH/DELETE /api/v1/conversations/{id}`：查看聊天记录、重命名或删除会话
+- `POST /api/v1/conversations/{id}/messages/stream`：通过 SSE 获取 RAG 流式回答
 
 文档上传支持 PDF、DOC/DOCX、PPT/PPTX、Markdown、TXT、HTML 和常见图片格式，
 默认单文件上限为 50MB。PDF、DOCX、PPTX、Markdown、TXT、HTML 和图片可直接解析，
@@ -75,6 +78,11 @@ npm run dev
 
 FAQ 路由只使用当前启用、地区匹配且处于有效期内的数据。达到 BM25 阈值时直接返回
 标准答案和文号来源，低于阈值时通过 `continue_to_rag=true` 进入后续 RAG 链路。
+
+流式问答依次执行问题理解、风险门禁、FAQ、混合检索、重排序和 Parent Context 构建，
+最终由通义千问生成仅基于检索依据的结构化答复。SSE 事件包括 `session`、`status`、
+`token`、`citation`、`done` 和 `error`；用户问题、回答状态、路由来源、模型参数及引用
+会写入 MySQL。没有可靠上下文时系统明确提示补充信息，不允许模型凭空生成政策文号。
 
 ## 测试
 

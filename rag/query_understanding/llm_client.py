@@ -1,4 +1,5 @@
 """DashScope OpenAI 兼容 LLM 客户端。"""
+
 from typing import Protocol
 
 from openai import OpenAI
@@ -6,6 +7,8 @@ from openai import OpenAI
 
 class StructuredLlmClient(Protocol):
     def complete_json(self, system_prompt: str, user_text: str) -> str: ...
+
+    def stream_answer(self, messages: list[dict], **parameters): ...
 
 
 class DashScopeLlmClient:
@@ -30,3 +33,14 @@ class DashScopeLlmClient:
         if not content:
             raise ValueError("LLM 返回内容为空")
         return content
+
+    def stream_answer(self, messages: list[dict], **parameters):
+        # SSE 上游逐块消费生成器，不在内存中等待完整模型响应。
+        model = parameters.pop("model", None) or self.model
+        stream = self.client.chat.completions.create(
+            model=model, messages=messages, stream=True, **parameters
+        )
+        for chunk in stream:
+            token = chunk.choices[0].delta.content
+            if token:
+                yield token
