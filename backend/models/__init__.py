@@ -5,6 +5,7 @@ from backend.models.document import Document, ParseStatus
 from backend.models.faq import Faq
 from backend.models.knowledge_base import KnowledgeBase, KnowledgeBaseType
 from backend.models.policy import PolicyMetadata, PolicyStatus
+from backend.models.review import FeedbackType, MessageFeedback, ReviewTicket, TicketStatus
 from backend.models.user import User
 
 __all__ = [
@@ -13,14 +14,18 @@ __all__ = [
     "Conversation",
     "Document",
     "Faq",
+    "FeedbackType",
     "KnowledgeBase",
     "KnowledgeBaseType",
     "MessageRole",
     "MessageStatus",
+    "MessageFeedback",
     "ParseStatus",
     "ParentChunk",
     "PolicyMetadata",
     "PolicyStatus",
+    "ReviewTicket",
+    "TicketStatus",
     "User",
     "VectorStatus",
 ]

@@ -17,6 +17,7 @@ from backend.db.session import get_db
 from backend.repositories.conversation_repository import ConversationRepository
 from backend.repositories.faq_repository import FaqRepository
 from backend.repositories.knowledge_base_repository import KnowledgeBaseRepository
+from backend.repositories.review_repository import ReviewRepository
 from backend.schemas.common import ApiResponse
 from backend.schemas.conversation import (
     ChatRequest,
@@ -31,6 +32,7 @@ from backend.services.faq import FaqService
 from backend.services.query_understanding import QueryUnderstandingService
 from backend.services.rag_chat import RagChatService
 from backend.services.retrieval import RetrievalService
+from backend.services.review import ReviewService
 
 # SSE 禁止代理缓冲，客户端可在首个 Token 到达时立即渲染。
 router = APIRouter()
@@ -106,7 +108,12 @@ def stream_chat(
         settings.retrieval_candidate_k,
     )
     orchestrator = RagChatService(
-        conversations, QueryUnderstandingService(get_llm_client()), faq, retrieval, get_llm_client()
+        conversations,
+        QueryUnderstandingService(get_llm_client()),
+        faq,
+        retrieval,
+        get_llm_client(),
+        ReviewService(ReviewRepository(session)),
     )
 
     def events():

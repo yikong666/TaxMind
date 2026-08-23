@@ -12,12 +12,13 @@ ANSWER_PROMPT = """你是 TaxMind 财税助手。只能依据给定上下文回�
 
 # 编排器以事件字典输出，HTTP 层只负责转换为 SSE 文本。
 class RagChatService:
-    def __init__(self, conversations, understanding, faq, retrieval, llm):
+    def __init__(self, conversations, understanding, faq, retrieval, llm, reviews=None):
         self.conversations = conversations
         self.understanding = understanding
         self.faq = faq
         self.retrieval = retrieval
         self.llm = llm
+        self.reviews = reviews
 
     def stream(self, conversation, owner_id, request):
         # 在写入本轮消息前截取历史，避免把当前空白回答带入模型上下文。
@@ -35,11 +36,13 @@ class RagChatService:
             assistant.risk_level = understood.risk_level.value
             if understood.safety_message:
                 yield from self._complete(assistant, understood.safety_message, "guardrail", [])
+                self._review_if_needed(assistant, owner_id, request.query, "guardrail")
                 return
             if understood.needs_clarification:
                 yield from self._complete(
                     assistant, understood.clarification_question, "clarification", []
                 )
+                self._review_if_needed(assistant, owner_id, request.query, "clarification")
                 return
             faq_result = self.faq.route(owner_id, request.query, request.region, request.query_date)
             if faq_result["matched"]:
@@ -56,6 +59,7 @@ class RagChatService:
                     )
                 }
                 yield from self._complete(assistant, item["answer"], "faq", [citation])
+                self._review_if_needed(assistant, owner_id, request.query, "faq")
                 return
             hits = []
             if request.knowledge_base_ids:
@@ -76,6 +80,7 @@ class RagChatService:
                     "no_context",
                     [],
                 )
+                self._review_if_needed(assistant, owner_id, request.query, "no_context")
                 return
             citations = [
                 {
@@ -110,6 +115,7 @@ class RagChatService:
                 full += token
                 yield {"event": "token", "data": {"text": token}}
             yield from self._complete(assistant, full, "rag", citations, emit_token=False)
+            self._review_if_needed(assistant, owner_id, request.query, "rag")
         except Exception as exc:
             assistant.status = MessageStatus.FAILED
             assistant.error_message = str(exc)
@@ -128,3 +134,15 @@ class RagChatService:
         for citation in citations:
             yield {"event": "citation", "data": citation}
         yield {"event": "done", "data": {"message_id": message.id, "route_source": source}}
+
+    def _review_if_needed(self, message, owner_id: int, query: str, source: str) -> None:
+        if self.reviews is None:
+            return
+        try:
+            # 人工队列异常只记录日志，不能把已经成功生成的回答改成失败状态。
+            if source == "no_context":
+                self.reviews.create_auto(message, owner_id, query, "low_confidence")
+            elif message.risk_level in {"HIGH", "PROHIBITED"}:
+                self.reviews.create_auto(message, owner_id, query, "high_risk")
+        except Exception:
+            logger.exception("自动创建人工工单失败 message_id=%s", message.id)

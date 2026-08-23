@@ -157,6 +157,11 @@ def test_guardrail_and_no_context_sse_branches(client: TestClient, monkeypatch) 
     )
     assert '"route_source": "no_context"' in no_context.text
     assert "没有找到足够可靠的依据" in no_context.text
+    tickets = client.get("/api/v1/tickets", headers=headers).json()["data"]
+    assert {ticket["trigger_reason"] for ticket in tickets} == {
+        "high_risk",
+        "low_confidence",
+    }
 
 
 def test_rag_sse_streams_model_tokens_and_policy_citation(client: TestClient, monkeypatch) -> None:
