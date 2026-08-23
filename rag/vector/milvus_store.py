@@ -137,9 +137,21 @@ class MilvusVectorStore:
             ),
         ]
         output_fields = [
-            "child_id", "parent_id", "document_id", "text", "parent_content",
-            "region", "doc_no", "tax_type", "taxpayer_type", "effective_start",
-            "effective_end", "policy_status", "source_url",
+            "child_id",
+            "parent_id",
+            "document_id",
+            "text",
+            "parent_content",
+            "policy_title",
+            "original_name",
+            "region",
+            "doc_no",
+            "tax_type",
+            "taxpayer_type",
+            "effective_start",
+            "effective_end",
+            "policy_status",
+            "source_url",
         ]
         result = self.client.hybrid_search(
             self.collection,

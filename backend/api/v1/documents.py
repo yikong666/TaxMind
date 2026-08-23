@@ -3,8 +3,10 @@
 # 大模型组件采用缓存单例，避免每次请求重复加载权重和连接 Milvus。
 from functools import lru_cache
 from typing import Annotated
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from backend.api.dependencies import CurrentUser
@@ -132,6 +134,21 @@ def list_chunks(
         for item in document.parent_chunks
     ]
     return ApiResponse(data=chunks)
+
+
+@router.get("/{document_id}/download")
+def download_document(
+    document_id: int, current_user: CurrentUser, service: ServiceDependency
+) -> Response:
+    document = service.get_document(document_id, current_user.id)
+    content = service.storage.download(document.object_key)
+    # RFC 5987 文件名可正确处理中文，且对象存储内部 key 不暴露给浏览器。
+    disposition = f"attachment; filename*=UTF-8''{quote(document.original_name)}"
+    return Response(
+        content=content,
+        media_type=document.content_type,
+        headers={"Content-Disposition": disposition},
+    )
 
 
 @router.get("/{document_id}/vector-status", response_model=ApiResponse[VectorStatusSummary])

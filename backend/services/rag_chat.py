@@ -103,10 +103,15 @@ class RagChatService:
             citations = [
                 {
                     "document_id": h.document_id,
+                    "policy_title": h.metadata.get("policy_title"),
+                    "original_name": h.metadata.get("original_name"),
                     "doc_no": h.metadata.get("doc_no"),
                     "region": h.metadata.get("region"),
+                    "effective_start": h.metadata.get("effective_start"),
+                    "effective_end": h.metadata.get("effective_end"),
                     "source_url": h.metadata.get("source_url"),
                     "content": h.text,
+                    "parent_content": h.parent_content,
                 }
                 for h in hits
             ]

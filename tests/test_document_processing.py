@@ -76,9 +76,7 @@ def test_internal_document_parse_is_immediately_searchable(client: TestClient) -
         "text/markdown",
     )
 
-    response = client.post(
-        f"/api/v1/documents/{document_id}/parse", headers=headers, json={}
-    )
+    response = client.post(f"/api/v1/documents/{document_id}/parse", headers=headers, json={})
     assert response.status_code == 200
     data = response.json()["data"]
     assert data["parse_status"] == "completed"
@@ -150,3 +148,26 @@ def test_legacy_doc_parse_failure_is_recorded(client: TestClient) -> None:
     response = client.post(f"/api/v1/documents/{document_id}/parse", headers=headers, json={})
     assert response.status_code == 400
     assert response.json()["code"] == "DOCUMENT_PARSE_FAILED"
+
+
+def test_document_download_requires_owner_and_preserves_filename(client: TestClient) -> None:
+    headers = authenticate(client, "document_download_owner")
+    knowledge_base_id = client.post(
+        "/api/v1/knowledge-bases",
+        headers=headers,
+        json={"name": "下载测试库", "description": "内部资料", "kb_type": "internal"},
+    ).json()["data"]["id"]
+    content = "内部申报操作手册".encode()
+    document_id = upload_document(
+        client, headers, knowledge_base_id, "申报手册.md", content, "text/markdown"
+    )
+    downloaded = client.get(f"/api/v1/documents/{document_id}/download", headers=headers)
+    assert downloaded.status_code == 200
+    assert downloaded.content == content
+    assert (
+        "UTF-8''%E7%94%B3%E6%8A%A5%E6%89%8B%E5%86%8C.md"
+        in downloaded.headers["content-disposition"]
+    )
+
+    other = authenticate(client, "document_download_other")
+    assert client.get(f"/api/v1/documents/{document_id}/download", headers=other).status_code == 404

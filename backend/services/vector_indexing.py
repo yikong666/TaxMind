@@ -83,6 +83,10 @@ class VectorIndexingService:
             dense_vector=dense,
             sparse_vector=sparse,
             metadata={
+                "policy_title": (
+                    metadata.policy_title if metadata and metadata.policy_title else ""
+                ),
+                "original_name": document.original_name,
                 "region": metadata.region if metadata and metadata.region else "",
                 "doc_no": metadata.doc_no if metadata and metadata.doc_no else "",
                 "tax_type": metadata.tax_type if metadata and metadata.tax_type else "",

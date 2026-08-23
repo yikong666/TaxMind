@@ -2,11 +2,13 @@
 import { Lock, User } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { login } from '@/api/auth'
 import { getErrorMessage } from '@/api/http'
 import { useCaptcha } from '@/composables/useCaptcha'
 
 const form = reactive({ username: '', password: '', captcha_code: '' })
+const router = useRouter()
 // 提交期间锁定按钮，避免重复登录请求和验证码重复消费。
 const submitting = ref(false)
 const { captchaId, captchaImageUrl, captchaLoading, captchaError, refreshCaptcha } = useCaptcha()
@@ -17,7 +19,9 @@ async function submitLogin() {
   try {
     const token = await login({ ...form, captcha_id: captchaId.value })
     sessionStorage.setItem('taxmind_access_token', token.access_token)
+    sessionStorage.setItem('taxmind_user', JSON.stringify(token.user))
     ElMessage.success(`欢迎回来，${token.user.username}`)
+    await router.replace('/chat')
   } catch (error) {
     ElMessage.error(getErrorMessage(error))
     form.captcha_code = ''

@@ -61,8 +61,12 @@ class FakeVectorStore:
                 text="小微企业可按现行政策享受企业所得税优惠。",
                 parent_content="符合条件的小型微利企业可按规定享受企业所得税优惠政策。",
                 metadata={
+                    "policy_title": "小型微利企业所得税优惠政策",
+                    "original_name": "所得税优惠政策.pdf",
                     "doc_no": "财税〔2026〕10号",
                     "region": "全国",
+                    "effective_start": 20260101,
+                    "effective_end": 20261231,
                     "source_url": "https://example.test/policy",
                 },
             )
@@ -198,6 +202,8 @@ def test_rag_sse_streams_model_tokens_and_policy_citation(client: TestClient, mo
     assert answer["content"] == "测试回答"
     assert answer["model_name"] is None
     assert answer["citations"][0]["document_id"] == 1
+    assert answer["citations"][0]["policy_title"] == "小型微利企业所得税优惠政策"
+    assert answer["citations"][0]["effective_end"] == 20261231
     assert answer["retrieval_strategy"] == "expansion"
     assert answer["retrieval_queries"] == [
         "小微企业有哪些所得税优惠？",

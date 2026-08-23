@@ -58,6 +58,7 @@ def test_document_is_indexed_with_dense_sparse_and_parent_metadata(
     record = store.documents[document_id][0]
     assert record.sparse_vector == {1: 0.5}
     assert "申报表" in record.parent_content
+    assert record.metadata["original_name"] == "guide.md"
     chunks = client.get(f"/api/v1/documents/{document_id}/chunks", headers=headers).json()
     assert chunks["data"][0]["children"][0]["vector_status"] == "indexed"
 
