@@ -238,7 +238,7 @@ onMounted(async () => {
     <section class="chat-workspace">
       <header class="chat-topbar">
         <div><p>智能财税问答</p><h1>{{ active?.title || '新会话' }}</h1></div>
-        <div class="topbar-actions"><el-button @click="router.push('/knowledge-bases')">知识库管理</el-button><span class="trust-indicator"><i />政策时效与地区过滤已启用</span><el-button :icon="Setting" circle @click="settingsVisible = !settingsVisible" /></div>
+        <div class="topbar-actions"><el-button @click="router.push('/knowledge-bases')">知识库</el-button><el-button @click="router.push('/faqs')">FAQ</el-button><span class="trust-indicator"><i />政策时效与地区过滤已启用</span><el-button :icon="Setting" circle @click="settingsVisible = !settingsVisible" /></div>
       </header>
       <div ref="messageList" class="message-list" v-loading="loading">
         <section v-if="active && !active.messages.length" class="empty-chat">

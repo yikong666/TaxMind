@@ -1,4 +1,5 @@
 """FAQ CRUD、缓存失效与 BM25 优先路由。"""
+
 import logging
 import re
 from datetime import date
@@ -46,15 +47,13 @@ class FaqService:
         normalized = normalize_question(values["question"])
         if self.repository.get_by_normalized_question(owner_id, normalized):
             raise BusinessError("FAQ 问题已存在", "FAQ_EXISTS", 409)
-        faq = self.repository.save(
-            Faq(owner_id=owner_id, normalized_question=normalized, **values)
-        )
+        faq = self.repository.save(Faq(owner_id=owner_id, normalized_question=normalized, **values))
         self._invalidate(owner_id)
         logger.info("FAQ 创建成功 faq_id=%s owner_id=%s", faq.id, owner_id)
         return faq
 
-    def list(self, owner_id: int) -> list[Faq]:
-        return self.repository.list(owner_id)
+    def list(self, owner_id: int, **filters) -> list[Faq]:
+        return self.repository.list(owner_id, **filters)
 
     def get(self, faq_id: int, owner_id: int) -> Faq:
         faq = self.repository.get(faq_id, owner_id)

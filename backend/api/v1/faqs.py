@@ -1,7 +1,8 @@
 """FAQ 管理与优先路由接口。"""
+
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from redis import Redis
 from sqlalchemy.orm import Session
 
@@ -60,9 +61,22 @@ def create_faq(
 
 @router.get("", response_model=ApiResponse[list[FaqData]])
 def list_faqs(
-    current_user: CurrentUser, service: FaqServiceDependency
+    current_user: CurrentUser,
+    service: FaqServiceDependency,
+    keyword: Annotated[str | None, Query(max_length=200)] = None,
+    category: Annotated[str | None, Query(max_length=100)] = None,
+    region: Annotated[str | None, Query(max_length=100)] = None,
+    is_enabled: bool | None = None,
 ) -> ApiResponse[list[FaqData]]:
-    return ApiResponse(data=[to_data(item) for item in service.list(current_user.id)])
+    # 列表筛选在数据库执行，避免 FAQ 数量增长后把全部答案传到浏览器。
+    items = service.list(
+        current_user.id,
+        keyword=keyword.strip() if keyword else None,
+        category=category,
+        region=region,
+        is_enabled=is_enabled,
+    )
+    return ApiResponse(data=[to_data(item) for item in items])
 
 
 @router.get("/{faq_id}", response_model=ApiResponse[FaqData])

@@ -63,13 +63,37 @@ def test_faq_crud_and_duplicate_question(client: TestClient, monkeypatch) -> Non
     assert duplicate.status_code == 409
     assert duplicate.json()["code"] == "FAQ_EXISTS"
 
-    updated = client.patch(
-        f"/api/v1/faqs/{faq_id}", headers=headers, json={"is_enabled": False}
-    )
+    updated = client.patch(f"/api/v1/faqs/{faq_id}", headers=headers, json={"is_enabled": False})
     assert updated.json()["data"]["is_enabled"] is False
     assert len(client.get("/api/v1/faqs", headers=headers).json()["data"]) == 1
     assert client.delete(f"/api/v1/faqs/{faq_id}", headers=headers).status_code == 200
     assert client.get(f"/api/v1/faqs/{faq_id}", headers=headers).status_code == 404
+
+
+def test_faq_list_supports_keyword_category_region_and_status_filters(
+    client: TestClient, monkeypatch
+) -> None:
+    setup_cache(monkeypatch)
+    headers = authenticate(client, "faq_filter_owner")
+    create_faq(client, headers, question="全国增值税如何申报？", region="全国")
+    create_faq(
+        client,
+        headers,
+        question="重庆发票如何申领？",
+        region="重庆",
+        is_enabled=False,
+    )
+
+    keyword = client.get(
+        "/api/v1/faqs", headers=headers, params={"keyword": "全国增值税"}
+    ).json()["data"]
+    disabled = client.get(
+        "/api/v1/faqs",
+        headers=headers,
+        params={"region": "重庆", "category": "申报", "is_enabled": "false"},
+    ).json()["data"]
+    assert [item["question"] for item in keyword] == ["全国增值税如何申报？"]
+    assert [item["question"] for item in disabled] == ["重庆发票如何申领？"]
 
 
 def test_faq_is_isolated_by_owner(client: TestClient, monkeypatch) -> None:
@@ -105,9 +129,9 @@ def test_exact_faq_hit_is_cached_then_invalidated(client: TestClient, monkeypatc
     version_before = next(iter(cache.versions.values()))
     client.patch(f"/api/v1/faqs/{faq_id}", headers=headers, json={"is_enabled": False})
     assert next(iter(cache.versions.values())) > version_before
-    after_disable = client.post(
-        "/api/v1/faqs/route/match", headers=headers, json=payload
-    ).json()["data"]
+    after_disable = client.post("/api/v1/faqs/route/match", headers=headers, json=payload).json()[
+        "data"
+    ]
     assert after_disable["matched"] is False
     assert after_disable["continue_to_rag"] is True
 

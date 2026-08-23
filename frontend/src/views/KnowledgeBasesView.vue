@@ -99,7 +99,7 @@ onMounted(() => refresh())
 
 <template>
   <main class="management-page">
-    <header class="management-header"><div class="management-brand"><span>税</span><div><strong>TaxMind</strong><small>知识资产中心</small></div></div><nav><el-button text :icon="ArrowLeft" @click="router.push('/chat')">返回智能问答</el-button></nav></header>
+    <header class="management-header"><div class="management-brand"><span>税</span><div><strong>TaxMind</strong><small>知识资产中心</small></div></div><nav><el-button text @click="router.push('/faqs')">FAQ 管理</el-button><el-button text :icon="ArrowLeft" @click="router.push('/chat')">返回智能问答</el-button></nav></header>
     <section class="management-content" v-loading="loading">
       <div class="page-heading"><div><p>KNOWLEDGE OPERATIONS</p><h1>知识库管理</h1><span>维护政策资料、解析内容和检索向量状态</span></div><el-button type="primary" :icon="Plus" @click="openBase()">新建知识库</el-button></div>
       <div class="metric-grid"><article><span>知识库</span><strong>{{ bases.length }}</strong></article><article><span>文档总数</span><strong>{{ totalDocuments }}</strong></article><article><span>Child Chunk</span><strong>{{ totalChunks }}</strong></article></div>

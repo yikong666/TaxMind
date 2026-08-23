@@ -1,4 +1,5 @@
 """FAQ 数据访问与有效候选过滤。"""
+
 from __future__ import annotations
 
 from datetime import date
@@ -16,27 +17,40 @@ class FaqRepository:
         self.session = session
 
     def get(self, faq_id: int, owner_id: int) -> Faq | None:
-        return self.session.scalar(
-            select(Faq).where(Faq.id == faq_id, Faq.owner_id == owner_id)
-        )
+        return self.session.scalar(select(Faq).where(Faq.id == faq_id, Faq.owner_id == owner_id))
 
     def get_by_normalized_question(self, owner_id: int, question: str) -> Faq | None:
         return self.session.scalar(
-            select(Faq).where(
-                Faq.owner_id == owner_id, Faq.normalized_question == question
-            )
+            select(Faq).where(Faq.owner_id == owner_id, Faq.normalized_question == question)
         )
 
-    def list(self, owner_id: int) -> list[Faq]:
-        return list(
-            self.session.scalars(
-                select(Faq).where(Faq.owner_id == owner_id).order_by(Faq.updated_at.desc())
-            )
-        )
-
-    def list_effective(
-        self, owner_id: int, region: str, query_date: date
+    def list(
+        self,
+        owner_id: int,
+        keyword: str | None = None,
+        category: str | None = None,
+        region: str | None = None,
+        is_enabled: bool | None = None,
     ) -> list[Faq]:
+        statement = select(Faq).where(Faq.owner_id == owner_id)
+        if keyword:
+            pattern = f"%{keyword}%"
+            statement = statement.where(
+                or_(
+                    Faq.question.ilike(pattern),
+                    Faq.answer.ilike(pattern),
+                    Faq.doc_no.ilike(pattern),
+                )
+            )
+        if category:
+            statement = statement.where(Faq.category == category)
+        if region:
+            statement = statement.where(Faq.region == region)
+        if is_enabled is not None:
+            statement = statement.where(Faq.is_enabled.is_(is_enabled))
+        return list(self.session.scalars(statement.order_by(Faq.updated_at.desc())))
+
+    def list_effective(self, owner_id: int, region: str, query_date: date) -> list[Faq]:
         regions = ["全国"] if region == "全国" else ["全国", region]
         statement = select(Faq).where(
             Faq.owner_id == owner_id,
