@@ -1,10 +1,12 @@
 # TaxMind
 这是一个面向代理记账机构、财税服务人员和小微企业服务场景的企业级 RAG 智能财税知识问答系统。
 
-## 当前进度
+## 技术架构
 
-项目正在按里程碑迭代。当前已建立 FastAPI 后端基线、Vue 3 前端基线，以及
-MySQL、Redis、Milvus、etcd、MinIO 的本地 Docker 编排。
+Vue 3 + Element Plus 提供智能问答和知识运营页面；FastAPI 提供 JWT 多租户业务接口；
+MySQL 保存业务数据，Redis 缓存 FAQ，MinIO 保存私有原文，Milvus 执行 BGE-M3
+Dense/Sparse Hybrid Search，候选结果经 bge-reranker-v2-m3 重排后交给 qwen3-max。
+完整链路见 `docs/architecture.md`。
 
 ## 环境要求
 
@@ -15,7 +17,14 @@ MySQL、Redis、Milvus、etcd、MinIO 的本地 Docker 编排。
 
 ## 本地启动
 
-复制配置模板并设置密码和 API Key：
+推荐执行一键初始化。首次运行会创建 `.env` 并要求先替换安全配置：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/setup.ps1
+powershell -ExecutionPolicy Bypass -File scripts/start.ps1
+```
+
+也可手动执行：
 
 ```powershell
 Copy-Item .env.example .env
@@ -23,6 +32,8 @@ uv sync
 docker compose up -d
 uv run alembic upgrade head
 uv run python scripts/download_models.py
+uv run python scripts/download_official_data.py
+uv run python scripts/check_readiness.py
 ```
 
 启动后端：
@@ -106,4 +117,11 @@ uv run python -m pytest tests/ -v
 uv run ruff check backend rag tests config.py
 ```
 
-完整架构、数据导入和 API 文档会随后续里程碑持续补充。
+## 官方数据与评测
+
+首批 5 份官方资料、来源 URL、SHA-256 和抓取时间位于 `data/`。设置
+`TAXMIND_ACCESS_TOKEN` 与 `TAXMIND_KNOWLEDGE_BASE_ID` 后运行
+`uv run python scripts/import_official_data.py` 可通过正式 API 入库。首版评测集包含 50 条问题，
+覆盖检索排名、文号、地区、时效和风险等级指标。
+
+生产部署、备份与验收说明见 `docs/deployment.md`。
