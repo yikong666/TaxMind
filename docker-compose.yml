@@ -1,0 +1,120 @@
+name: taxmind
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: taxmind-mysql
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-taxmind_root_change_me}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-taxmind}
+      MYSQL_USER: ${MYSQL_USER:-taxmind}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-taxmind_change_me}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - ./docker/volumes/mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-taxmind_root_change_me}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: taxmind-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:-taxmind_change_me}"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - ./docker/volumes/redis:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a ${REDIS_PASSWORD:-taxmind_change_me} ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.18
+    container_name: taxmind-etcd
+    restart: unless-stopped
+    environment:
+      ETCD_AUTO_COMPACTION_MODE: revision
+      ETCD_AUTO_COMPACTION_RETENTION: "1000"
+      ETCD_QUOTA_BACKEND_BYTES: "4294967296"
+      ETCD_SNAPSHOT_COUNT: "50000"
+    command: etcd --advertise-client-urls=http://127.0.0.1:2379 --listen-client-urls=http://0.0.0.0:2379 --data-dir=/etcd
+    volumes:
+      - ./docker/volumes/etcd:/etcd
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    container_name: taxmind-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-taxmind_admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-taxmind_minio_change_me}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - ./docker/volumes/minio:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  minio-init:
+    image: minio/mc:RELEASE.2025-04-16T18-13-26Z
+    container_name: taxmind-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set taxmind http://minio:9000 ${MINIO_ACCESS_KEY:-taxmind_admin} ${MINIO_SECRET_KEY:-taxmind_minio_change_me};
+      mc mb --ignore-existing taxmind/${MINIO_BUCKET:-taxmind-documents};
+      mc anonymous set none taxmind/${MINIO_BUCKET:-taxmind-documents};
+      "
+    restart: "no"
+
+  milvus:
+    image: milvusdb/milvus:v2.5.14
+    container_name: taxmind-milvus
+    restart: unless-stopped
+    command: ["milvus", "run", "standalone"]
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+      MINIO_ACCESS_KEY_ID: ${MINIO_ACCESS_KEY:-taxmind_admin}
+      MINIO_SECRET_ACCESS_KEY: ${MINIO_SECRET_KEY:-taxmind_minio_change_me}
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+    volumes:
+      - ./docker/volumes/milvus:/var/lib/milvus
+    depends_on:
+      etcd:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+networks:
+  default:
+    name: taxmind-network
