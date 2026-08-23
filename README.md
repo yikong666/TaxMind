@@ -55,6 +55,9 @@ npm run dev
 - `GET /api/v1/documents/{id}/chunks`：预览标题层级、父块和子块
 - `PUT /api/v1/documents/{id}/policy-metadata`：维护政策文号、地区和有效期等元数据
 - `POST /api/v1/documents/{id}/index`：使用 BGE-M3 生成 Dense/Sparse 向量并写入 Milvus
+- `GET /api/v1/documents/{id}/vector-status`：汇总待索引、已索引和失败 Chunk 数量
+- `PATCH/DELETE /api/v1/chunks/parents/{id}`：编辑或删除 Parent Chunk
+- `PATCH/DELETE /api/v1/chunks/children/{id}`：编辑或删除 Child Chunk
 - `POST /api/v1/retrieval/search`：按知识库、地区、有效期和纳税人条件执行混合检索
 - `POST /api/v1/query/understand`：使用 LLM Structured Output 提取意图并判断信息完整性与风险
 - `POST/GET/PATCH/DELETE /api/v1/faqs`：管理高频税务 FAQ
@@ -70,6 +73,8 @@ npm run dev
 默认单文件上限为 50MB。PDF、DOCX、PPTX、Markdown、TXT、HTML 和图片可直接解析，
 图片使用 OCR 提取文字；旧版 DOC/PPT 文件需先转换为 DOCX/PPTX。政策类文档只有在
 解析完成且必填政策元数据完整后才进入可检索状态，内部资料解析完成后即可检索。
+编辑或删除任意 Chunk 会先清理该文档的旧 Milvus 向量，并将剩余 Child Chunk 标记为
+`pending`；再次调用文档索引接口即可整篇重新索引，避免旧内容继续进入问答上下文。
 
 混合检索使用 BGE-M3 Dense/Sparse 两路召回和 Milvus WeightedRanker，再由
 `bge-reranker-v2-m3` 对 Top-N 候选重排序并按 Parent Chunk 去重。当前政策检索仅

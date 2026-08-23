@@ -11,6 +11,7 @@ from backend.api.dependencies import CurrentUser
 from backend.core.config import get_settings
 from backend.db.session import get_db
 from backend.repositories.knowledge_base_repository import KnowledgeBaseRepository
+from backend.schemas.chunk_management import VectorStatusSummary
 from backend.schemas.common import ApiResponse
 from backend.schemas.document_processing import (
     ParentChunkData,
@@ -20,6 +21,7 @@ from backend.schemas.document_processing import (
     PolicyMetadataUpdate,
     VectorIndexResult,
 )
+from backend.services.chunk_management import ChunkManagementService
 from backend.services.document_processing import DocumentProcessingService
 from backend.services.storage import ObjectStorage, get_object_storage
 from backend.services.vector_indexing import VectorIndexingService
@@ -71,6 +73,25 @@ def get_vector_indexing_service(
 VectorServiceDependency = Annotated[VectorIndexingService, Depends(get_vector_indexing_service)]
 
 
+def get_chunk_management_service(
+    session: Annotated[Session, Depends(get_db)],
+) -> ChunkManagementService:
+    return ChunkManagementService(KnowledgeBaseRepository(session), get_vector_store())
+
+
+ChunkServiceDependency = Annotated[ChunkManagementService, Depends(get_chunk_management_service)]
+
+
+def get_chunk_status_service(
+    session: Annotated[Session, Depends(get_db)],
+) -> ChunkManagementService:
+    # 状态汇总仅查询 MySQL，不因 Milvus 暂时不可用而阻断管理页面。
+    return ChunkManagementService(KnowledgeBaseRepository(session))
+
+
+ChunkStatusServiceDependency = Annotated[ChunkManagementService, Depends(get_chunk_status_service)]
+
+
 def to_parse_result(document, service: DocumentProcessingService) -> ParseResult:
     metadata_complete = bool(document.policy_metadata and document.policy_metadata.is_complete)
     return ParseResult(
@@ -113,6 +134,17 @@ def list_chunks(
     return ApiResponse(data=chunks)
 
 
+@router.get("/{document_id}/vector-status", response_model=ApiResponse[VectorStatusSummary])
+def vector_status(
+    document_id: int,
+    current_user: CurrentUser,
+    service: ChunkStatusServiceDependency,
+) -> ApiResponse[VectorStatusSummary]:
+    return ApiResponse(
+        data=VectorStatusSummary.model_validate(service.vector_status(document_id, current_user.id))
+    )
+
+
 @router.put("/{document_id}/policy-metadata", response_model=ApiResponse[PolicyMetadataData])
 def update_policy_metadata(
     document_id: int,
@@ -125,10 +157,7 @@ def update_policy_metadata(
         values["source_url"] = str(values["source_url"])
     metadata = service.update_policy_metadata(document_id, current_user.id, **values)
     data = PolicyMetadataData(
-        **{
-            field: getattr(metadata, field)
-            for field in PolicyMetadataUpdate.model_fields
-        },
+        **{field: getattr(metadata, field) for field in PolicyMetadataUpdate.model_fields},
         document_id=metadata.document_id,
         is_complete=metadata.is_complete,
     )

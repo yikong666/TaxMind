@@ -74,6 +74,23 @@ class KnowledgeBaseRepository:
             .where(Document.id == document_id, KnowledgeBase.owner_id == owner_id)
         )
 
+    def get_parent_chunk(self, chunk_id: int, owner_id: int) -> ParentChunk | None:
+        return self.session.scalar(
+            select(ParentChunk)
+            .join(Document)
+            .join(KnowledgeBase)
+            .where(ParentChunk.id == chunk_id, KnowledgeBase.owner_id == owner_id)
+        )
+
+    def get_child_chunk(self, chunk_id: int, owner_id: int) -> ChildChunk | None:
+        return self.session.scalar(
+            select(ChildChunk)
+            .join(ParentChunk)
+            .join(Document)
+            .join(KnowledgeBase)
+            .where(ChildChunk.id == chunk_id, KnowledgeBase.owner_id == owner_id)
+        )
+
     def set_parse_status(
         self, document: Document, status: ParseStatus, error: str | None = None
     ) -> None:
@@ -127,3 +144,26 @@ class KnowledgeBaseRepository:
             child.vector_status = status
             child.vector_id = vector_ids.get(child.id) if status == VectorStatus.INDEXED else None
         self.session.commit()
+
+    def save_chunk_change(self, document: Document) -> None:
+        children = [child for parent in document.parent_chunks for child in parent.children]
+        for child in children:
+            child.vector_status = VectorStatus.PENDING
+            child.vector_id = None
+        document.parent_chunk_count = len(document.parent_chunks)
+        document.child_chunk_count = len(children)
+        self.session.commit()
+
+    def delete_parent_chunk(self, parent: ParentChunk) -> Document:
+        document = parent.document
+        document.parent_chunks.remove(parent)
+        self.session.flush()
+        self.save_chunk_change(document)
+        return document
+
+    def delete_child_chunk(self, child: ChildChunk) -> Document:
+        document = child.parent.document
+        child.parent.children.remove(child)
+        self.session.flush()
+        self.save_chunk_change(document)
+        return document

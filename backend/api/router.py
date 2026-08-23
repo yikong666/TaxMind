@@ -2,6 +2,7 @@
 from fastapi import APIRouter
 
 from backend.api.v1.auth import router as auth_router
+from backend.api.v1.chunks import router as chunk_router
 from backend.api.v1.conversations import router as conversation_router
 from backend.api.v1.documents import router as document_router
 from backend.api.v1.faqs import router as faq_router
@@ -15,6 +16,7 @@ api_router = APIRouter()
 api_router.include_router(health_router, tags=["系统"])
 api_router.include_router(auth_router, prefix="/auth", tags=["账号认证"])
 api_router.include_router(conversation_router, prefix="/conversations", tags=["会话与流式问答"])
+api_router.include_router(chunk_router, prefix="/chunks", tags=["Chunk 管理"])
 api_router.include_router(knowledge_base_router, prefix="/knowledge-bases", tags=["知识库"])
 api_router.include_router(document_router, prefix="/documents", tags=["文档解析"])
 api_router.include_router(faq_router, prefix="/faqs", tags=["FAQ 管理与路由"])
