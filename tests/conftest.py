@@ -37,6 +37,9 @@ class MemoryObjectStorage(ObjectStorage):
     def delete(self, object_key: str) -> None:
         self.objects.pop(object_key, None)
 
+    def download(self, object_key: str) -> bytes:
+        return self.objects[object_key]
+
 
 @pytest.fixture
 def client(monkeypatch: pytest.MonkeyPatch, tmp_path) -> TestClient:

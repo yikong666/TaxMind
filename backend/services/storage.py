@@ -13,6 +13,8 @@ class ObjectStorage(Protocol):
 
     def delete(self, object_key: str) -> None: ...
 
+    def download(self, object_key: str) -> bytes: ...
+
 
 class MinioObjectStorage:
     def __init__(self, client: Minio, bucket: str):
@@ -24,6 +26,14 @@ class MinioObjectStorage:
 
     def delete(self, object_key: str) -> None:
         self.client.remove_object(self.bucket, object_key)
+
+    def download(self, object_key: str) -> bytes:
+        response = self.client.get_object(self.bucket, object_key)
+        try:
+            return response.read()
+        finally:
+            response.close()
+            response.release_conn()
 
 
 def get_object_storage() -> ObjectStorage:

@@ -50,9 +50,14 @@ npm run dev
 - `GET /api/v1/knowledge-bases`：查看当前用户的知识库
 - `GET/PATCH/DELETE /api/v1/knowledge-bases/{id}`：查看、修改或删除知识库
 - `POST /api/v1/knowledge-bases/{id}/documents`：向私有 MinIO 桶批量上传文档
+- `POST /api/v1/documents/{id}/parse`：解析文档并生成 Parent-Child Chunk
+- `GET /api/v1/documents/{id}/chunks`：预览标题层级、父块和子块
+- `PUT /api/v1/documents/{id}/policy-metadata`：维护政策文号、地区和有效期等元数据
 
 文档上传支持 PDF、DOC/DOCX、PPT/PPTX、Markdown、TXT、HTML 和常见图片格式，
-默认单文件上限为 50MB。上传成功后状态为 `pending`，后续解析任务会消费该状态。
+默认单文件上限为 50MB。PDF、DOCX、PPTX、Markdown、TXT、HTML 和图片可直接解析，
+图片使用 OCR 提取文字；旧版 DOC/PPT 文件需先转换为 DOCX/PPTX。政策类文档只有在
+解析完成且必填政策元数据完整后才进入可检索状态，内部资料解析完成后即可检索。
 
 ## 测试
 

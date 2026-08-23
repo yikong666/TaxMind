@@ -1,11 +1,18 @@
+from backend.models.chunk import ChildChunk, ParentChunk, VectorStatus
 from backend.models.document import Document, ParseStatus
 from backend.models.knowledge_base import KnowledgeBase, KnowledgeBaseType
+from backend.models.policy import PolicyMetadata, PolicyStatus
 from backend.models.user import User
 
 __all__ = [
+    "ChildChunk",
     "Document",
     "KnowledgeBase",
     "KnowledgeBaseType",
     "ParseStatus",
+    "ParentChunk",
+    "PolicyMetadata",
+    "PolicyStatus",
     "User",
+    "VectorStatus",
 ]

@@ -2,8 +2,10 @@
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from backend.models.document import Document
+from backend.models.chunk import ChildChunk, ParentChunk
+from backend.models.document import Document, ParseStatus
 from backend.models.knowledge_base import KnowledgeBase, KnowledgeBaseType
+from backend.models.policy import PolicyMetadata
 
 
 class KnowledgeBaseRepository:
@@ -59,3 +61,52 @@ class KnowledgeBaseRepository:
         self.session.commit()
         self.session.refresh(document)
         return document
+
+    def get_document(self, document_id: int, owner_id: int) -> Document | None:
+        return self.session.scalar(
+            select(Document)
+            .join(KnowledgeBase)
+            .where(Document.id == document_id, KnowledgeBase.owner_id == owner_id)
+        )
+
+    def set_parse_status(
+        self, document: Document, status: ParseStatus, error: str | None = None
+    ) -> None:
+        document.parse_status = status
+        document.parse_error = error
+        self.session.commit()
+
+    def replace_chunks(self, document: Document, drafts, is_policy: bool) -> Document:
+        for old_chunk in list(document.parent_chunks):
+            self.session.delete(old_chunk)
+        self.session.flush()
+        parent_count = 0
+        child_count = 0
+        for parent_index, draft in enumerate(drafts):
+            parent = ParentChunk(
+                document_id=document.id,
+                chunk_index=parent_index,
+                heading=draft.heading,
+                content=draft.content,
+            )
+            parent.children = [
+                ChildChunk(chunk_index=index, content=content)
+                for index, content in enumerate(draft.children)
+            ]
+            self.session.add(parent)
+            parent_count += 1
+            child_count += len(parent.children)
+        if is_policy and document.policy_metadata is None:
+            document.policy_metadata = PolicyMetadata(document_id=document.id)
+        document.parent_chunk_count = parent_count
+        document.child_chunk_count = child_count
+        document.parse_status = ParseStatus.COMPLETED
+        document.parse_error = None
+        self.session.commit()
+        self.session.refresh(document)
+        return document
+
+    def save_policy_metadata(self, metadata: PolicyMetadata) -> PolicyMetadata:
+        self.session.commit()
+        self.session.refresh(metadata)
+        return metadata

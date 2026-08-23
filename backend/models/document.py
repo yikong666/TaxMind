@@ -35,3 +35,9 @@ class Document(TimestampMixin, Base):
     parent_chunk_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     child_chunk_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     knowledge_base: Mapped["KnowledgeBase"] = relationship(back_populates="documents")  # noqa: F821
+    policy_metadata: Mapped["PolicyMetadata | None"] = relationship(  # noqa: F821
+        back_populates="document", cascade="all, delete-orphan", uselist=False
+    )
+    parent_chunks: Mapped[list["ParentChunk"]] = relationship(  # noqa: F821
+        back_populates="document", cascade="all, delete-orphan", order_by="ParentChunk.chunk_index"
+    )

@@ -46,6 +46,9 @@ class Settings(BaseSettings):
     minio_bucket: str = "taxmind-documents"
     minio_secure: bool = False
     max_upload_size_mb: int = 50
+    parent_chunk_size: int = 1200
+    child_chunk_size: int = 300
+    chunk_overlap: int = 50
     dashscope_api_key: SecretStr = SecretStr("")
     dashscope_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
     llm_model: str = "qwen3-max"
@@ -77,11 +80,20 @@ class Settings(BaseSettings):
         "access_token_expire_minutes",
         "captcha_expire_seconds",
         "max_upload_size_mb",
+        "parent_chunk_size",
+        "child_chunk_size",
     )
     @classmethod
     def validate_positive_integer(cls, value: int) -> int:
         if value <= 0:
             raise ValueError("数值必须大于 0")
+        return value
+
+    @field_validator("chunk_overlap")
+    @classmethod
+    def validate_overlap(cls, value: int) -> int:
+        if value < 0:
+            raise ValueError("Chunk overlap 不能小于 0")
         return value
 
 
