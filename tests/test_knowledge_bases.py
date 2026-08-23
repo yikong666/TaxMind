@@ -50,6 +50,7 @@ def test_create_list_update_and_get_knowledge_base(client: TestClient) -> None:
 
     listed = client.get("/api/v1/knowledge-bases", headers=headers)
     assert listed.json()["data"][0]["document_count"] == 0
+    assert listed.json()["data"][0]["chunk_count"] == 0
 
     updated = client.patch(
         f"/api/v1/knowledge-bases/{knowledge_base_id}",
@@ -61,6 +62,28 @@ def test_create_list_update_and_get_knowledge_base(client: TestClient) -> None:
     detail = client.get(f"/api/v1/knowledge-bases/{knowledge_base_id}", headers=headers)
     assert detail.status_code == 200
     assert detail.json()["data"]["documents"] == []
+
+
+def test_knowledge_base_detail_exposes_document_status_and_chunk_statistics(
+    client: TestClient,
+) -> None:
+    headers = authenticate(client, "kb_statistics")
+    knowledge_base_id = create_knowledge_base(client, headers).json()["data"]["id"]
+    uploaded = client.post(
+        f"/api/v1/knowledge-bases/{knowledge_base_id}/documents",
+        headers=headers,
+        files={"files": ("policy.md", "# 政策\n有效内容".encode(), "text/markdown")},
+    ).json()["data"][0]
+    client.post(f"/api/v1/documents/{uploaded['id']}/parse", headers=headers, json={})
+
+    listed = client.get("/api/v1/knowledge-bases", headers=headers).json()["data"][0]
+    detail = client.get(
+        f"/api/v1/knowledge-bases/{knowledge_base_id}", headers=headers
+    ).json()["data"]
+    assert listed["document_count"] == 1
+    assert listed["chunk_count"] == 1
+    assert detail["documents"][0]["parse_status"] == "completed"
+    assert detail["documents"][0]["policy_metadata"]["is_complete"] is False
 
 
 def test_duplicate_knowledge_base_name_is_rejected(client: TestClient) -> None:

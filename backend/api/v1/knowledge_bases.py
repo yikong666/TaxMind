@@ -34,7 +34,9 @@ def get_knowledge_base_service(
 ServiceDependency = Annotated[KnowledgeBaseService, Depends(get_knowledge_base_service)]
 
 
-def to_data(knowledge_base, document_count: int | None = None) -> KnowledgeBaseData:
+def to_data(
+    knowledge_base, document_count: int | None = None, chunk_count: int | None = None
+) -> KnowledgeBaseData:
     return KnowledgeBaseData(
         id=knowledge_base.id,
         name=knowledge_base.name,
@@ -42,6 +44,11 @@ def to_data(knowledge_base, document_count: int | None = None) -> KnowledgeBaseD
         kb_type=knowledge_base.kb_type,
         document_count=(
             document_count if document_count is not None else len(knowledge_base.documents)
+        ),
+        chunk_count=(
+            chunk_count
+            if chunk_count is not None
+            else sum(item.child_chunk_count for item in knowledge_base.documents)
         ),
         created_at=knowledge_base.created_at,
         updated_at=knowledge_base.updated_at,
@@ -53,14 +60,17 @@ def create_knowledge_base(
     request: KnowledgeBaseCreate, current_user: CurrentUser, service: ServiceDependency
 ) -> ApiResponse[KnowledgeBaseData]:
     knowledge_base = service.create(current_user.id, **request.model_dump())
-    return ApiResponse(message="知识库创建成功", data=to_data(knowledge_base, 0))
+    return ApiResponse(message="知识库创建成功", data=to_data(knowledge_base, 0, 0))
 
 
 @router.get("", response_model=ApiResponse[list[KnowledgeBaseData]])
 def list_knowledge_bases(
     current_user: CurrentUser, service: ServiceDependency
 ) -> ApiResponse[list[KnowledgeBaseData]]:
-    items = [to_data(kb, count) for kb, count in service.repository.list(current_user.id)]
+    items = [
+        to_data(kb, document_count, chunk_count)
+        for kb, document_count, chunk_count in service.repository.list(current_user.id)
+    ]
     return ApiResponse(data=items)
 
 

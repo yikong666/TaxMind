@@ -31,9 +31,13 @@ class KnowledgeBaseRepository:
             )
         )
 
-    def list(self, owner_id: int) -> list[tuple[KnowledgeBase, int]]:
+    def list(self, owner_id: int) -> list[tuple[KnowledgeBase, int, int]]:
         statement = (
-            select(KnowledgeBase, func.count(Document.id))
+            select(
+                KnowledgeBase,
+                func.count(Document.id),
+                func.coalesce(func.sum(Document.child_chunk_count), 0),
+            )
             .outerjoin(Document)
             .where(KnowledgeBase.owner_id == owner_id)
             .group_by(KnowledgeBase.id)
