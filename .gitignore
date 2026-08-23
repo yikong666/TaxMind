@@ -192,6 +192,7 @@ cython_debug/
 logs/
 uploads/
 data/raw/
+data/models/
 docker/volumes/
 frontend/node_modules/
 frontend/dist/

@@ -53,6 +53,10 @@ class Settings(BaseSettings):
     dashscope_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
     llm_model: str = "qwen3-max"
     embedding_model: str = "BAAI/bge-m3"
+    embedding_model_path: Path = PROJECT_ROOT / "data" / "models" / "bge-m3"
+    embedding_device: str = "cpu"
+    embedding_batch_size: int = 8
+    embedding_dense_dim: int = 1024
     reranker_model: str = "BAAI/bge-reranker-v2-m3"
     default_top_k: int = 5
     default_history_rounds: int = 5
@@ -82,6 +86,8 @@ class Settings(BaseSettings):
         "max_upload_size_mb",
         "parent_chunk_size",
         "child_chunk_size",
+        "embedding_batch_size",
+        "embedding_dense_dim",
     )
     @classmethod
     def validate_positive_integer(cls, value: int) -> int:

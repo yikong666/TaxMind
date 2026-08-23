@@ -1,11 +1,14 @@
 """知识库与文档数据访问。"""
+from __future__ import annotations
+
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from backend.models.chunk import ChildChunk, ParentChunk
+from backend.models.chunk import ChildChunk, ParentChunk, VectorStatus
 from backend.models.document import Document, ParseStatus
 from backend.models.knowledge_base import KnowledgeBase, KnowledgeBaseType
 from backend.models.policy import PolicyMetadata
+from rag.vector.milvus_store import VectorRecord
 
 
 class KnowledgeBaseRepository:
@@ -110,3 +113,15 @@ class KnowledgeBaseRepository:
         self.session.commit()
         self.session.refresh(metadata)
         return metadata
+
+    def set_vector_status(
+        self,
+        children: list[ChildChunk],
+        status: VectorStatus,
+        records: list[VectorRecord] | None = None,
+    ) -> None:
+        vector_ids = {item.child_id: item.id for item in records or []}
+        for child in children:
+            child.vector_status = status
+            child.vector_id = vector_ids.get(child.id) if status == VectorStatus.INDEXED else None
+        self.session.commit()

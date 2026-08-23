@@ -1,4 +1,5 @@
 """文档解析、Chunk 预览与政策元数据接口。"""
+from functools import lru_cache
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
@@ -15,9 +16,13 @@ from backend.schemas.document_processing import (
     ParseResult,
     PolicyMetadataData,
     PolicyMetadataUpdate,
+    VectorIndexResult,
 )
 from backend.services.document_processing import DocumentProcessingService
 from backend.services.storage import ObjectStorage, get_object_storage
+from backend.services.vector_indexing import VectorIndexingService
+from rag.embedding.bge_m3 import BgeM3EmbeddingProvider
+from rag.vector.milvus_store import MilvusVectorStore
 
 router = APIRouter()
 
@@ -30,6 +35,38 @@ def get_document_processing_service(
 
 
 ServiceDependency = Annotated[DocumentProcessingService, Depends(get_document_processing_service)]
+
+
+@lru_cache
+def get_embedding_provider() -> BgeM3EmbeddingProvider:
+    settings = get_settings()
+    return BgeM3EmbeddingProvider(settings.embedding_model_path, settings.embedding_device)
+
+
+@lru_cache
+def get_vector_store() -> MilvusVectorStore:
+    settings = get_settings()
+    return MilvusVectorStore(
+        f"http://{settings.milvus_host}:{settings.milvus_port}",
+        settings.milvus_database,
+        settings.milvus_collection,
+        settings.embedding_dense_dim,
+    )
+
+
+def get_vector_indexing_service(
+    session: Annotated[Session, Depends(get_db)],
+) -> VectorIndexingService:
+    settings = get_settings()
+    return VectorIndexingService(
+        KnowledgeBaseRepository(session),
+        get_embedding_provider(),
+        get_vector_store(),
+        settings.embedding_batch_size,
+    )
+
+
+VectorServiceDependency = Annotated[VectorIndexingService, Depends(get_vector_indexing_service)]
 
 
 def to_parse_result(document, service: DocumentProcessingService) -> ParseResult:
@@ -94,3 +131,20 @@ def update_policy_metadata(
         is_complete=metadata.is_complete,
     )
     return ApiResponse(message="政策元数据保存成功", data=data)
+
+
+@router.post("/{document_id}/index", response_model=ApiResponse[VectorIndexResult])
+def index_document(
+    document_id: int,
+    current_user: CurrentUser,
+    service: VectorServiceDependency,
+) -> ApiResponse[VectorIndexResult]:
+    count = service.index(document_id, current_user.id)
+    return ApiResponse(
+        message="文档向量化完成",
+        data=VectorIndexResult(
+            document_id=document_id,
+            indexed_count=count,
+            vector_status="indexed",
+        ),
+    )

@@ -4,5 +4,9 @@
 - `processed/`：清洗后的可复现数据。
 - `manifests/`：数据来源、下载时间、校验值和许可说明。
 - `evaluation/`：脱敏后的专项评测集。
+- `models/`：运行时下载的 BGE-M3 等模型文件，不提交到 Git。
 
 项目只采集国家税务总局、试点地区税务局等官方公开资料，下载脚本和来源清单会随代码提交。
+
+模型可通过 `uv run python scripts/download_models.py` 下载，来源与许可证记录在
+`manifests/` 中。

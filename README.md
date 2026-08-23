@@ -22,6 +22,7 @@ Copy-Item .env.example .env
 uv sync
 docker compose up -d
 uv run alembic upgrade head
+uv run python scripts/download_models.py
 ```
 
 启动后端：
@@ -53,6 +54,7 @@ npm run dev
 - `POST /api/v1/documents/{id}/parse`：解析文档并生成 Parent-Child Chunk
 - `GET /api/v1/documents/{id}/chunks`：预览标题层级、父块和子块
 - `PUT /api/v1/documents/{id}/policy-metadata`：维护政策文号、地区和有效期等元数据
+- `POST /api/v1/documents/{id}/index`：使用 BGE-M3 生成 Dense/Sparse 向量并写入 Milvus
 
 文档上传支持 PDF、DOC/DOCX、PPT/PPTX、Markdown、TXT、HTML 和常见图片格式，
 默认单文件上限为 50MB。PDF、DOCX、PPTX、Markdown、TXT、HTML 和图片可直接解析，

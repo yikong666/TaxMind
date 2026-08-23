@@ -1,0 +1,9 @@
+{
+  "name": "BGE-M3",
+  "repository": "BAAI/bge-m3",
+  "source": "https://huggingface.co/BAAI/bge-m3",
+  "license": "MIT",
+  "purpose": "TaxMind Child Chunk 的 Dense 与 Sparse 向量化",
+  "local_path": "data/models/bge-m3",
+  "download_command": "uv run python scripts/download_models.py"
+}

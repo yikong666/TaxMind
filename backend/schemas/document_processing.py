@@ -3,6 +3,7 @@ from datetime import date
 
 from pydantic import BaseModel, Field, HttpUrl
 
+from backend.models.chunk import VectorStatus
 from backend.models.document import ParseStatus
 from backend.models.policy import PolicyStatus
 
@@ -64,3 +65,9 @@ class PolicyMetadataData(BaseModel):
     policy_status: PolicyStatus | None
     source_url: str | None
     is_complete: bool
+
+
+class VectorIndexResult(BaseModel):
+    document_id: int
+    indexed_count: int
+    vector_status: VectorStatus
