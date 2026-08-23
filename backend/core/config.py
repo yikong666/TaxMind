@@ -54,6 +54,7 @@ class Settings(BaseSettings):
     dashscope_api_key: SecretStr = SecretStr("")
     dashscope_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
     llm_model: str = "qwen3-max"
+    llm_timeout_seconds: int = 30
     embedding_model: str = "BAAI/bge-m3"
     embedding_model_path: Path = PROJECT_ROOT / "data" / "models" / "bge-m3"
     embedding_device: str = "cpu"
@@ -96,6 +97,7 @@ class Settings(BaseSettings):
         "embedding_dense_dim",
         "reranker_batch_size",
         "retrieval_candidate_k",
+        "llm_timeout_seconds",
     )
     @classmethod
     def validate_positive_integer(cls, value: int) -> int:

@@ -56,6 +56,7 @@ npm run dev
 - `PUT /api/v1/documents/{id}/policy-metadata`：维护政策文号、地区和有效期等元数据
 - `POST /api/v1/documents/{id}/index`：使用 BGE-M3 生成 Dense/Sparse 向量并写入 Milvus
 - `POST /api/v1/retrieval/search`：按知识库、地区、有效期和纳税人条件执行混合检索
+- `POST /api/v1/query/understand`：使用 LLM Structured Output 提取意图并判断信息完整性与风险
 
 文档上传支持 PDF、DOC/DOCX、PPT/PPTX、Markdown、TXT、HTML 和常见图片格式，
 默认单文件上限为 50MB。PDF、DOCX、PPTX、Markdown、TXT、HTML 和图片可直接解析，
@@ -66,6 +67,9 @@ npm run dev
 `bge-reranker-v2-m3` 对 Top-N 候选重排序并按 Parent Chunk 去重。当前政策检索仅
 允许 `active` 状态且在查询日期有效的政策；地方查询可同时使用全国政策和本地区政策，
 全国查询不会混入地方政策。Child Chunk 参与召回，接口返回对应 Parent Chunk 和引用元数据。
+
+问题理解使用 `qwen3-max + 中文 Prompt`，不训练 BERT。系统会提取地区、纳税人类型、
+税种、所属期、金额和业务类型；信息不足时先追问，违法违规操作请求会被保守风险规则拦截。
 
 ## 测试
 
