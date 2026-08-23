@@ -1,4 +1,6 @@
 """文档 Child Chunk 向量化与 Milvus 入库服务。"""
+
+# Child Chunk 负责召回，Parent Chunk 内容随向量一并保存供生成阶段使用。
 import logging
 from datetime import date
 

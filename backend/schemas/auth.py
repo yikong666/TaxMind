@@ -1,4 +1,6 @@
 """账号认证请求和响应。"""
+
+# 密码和验证码只允许出现在请求模型，不进入响应结构。
 from pydantic import BaseModel, Field, field_validator
 
 

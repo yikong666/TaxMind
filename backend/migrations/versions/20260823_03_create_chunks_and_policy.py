@@ -6,6 +6,8 @@ Revises: 20260823_02
 import sqlalchemy as sa
 from alembic import op
 
+# Child 到 Parent 的外键映射保证检索结果可回溯完整上下文。
+
 revision: str = "20260823_03"
 down_revision: str | None = "20260823_02"
 branch_labels = None

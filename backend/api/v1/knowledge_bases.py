@@ -1,4 +1,6 @@
 """知识库与文档接口。"""
+
+# 文件流由 Service 校验后写入私有对象存储。
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, UploadFile

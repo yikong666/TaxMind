@@ -1,4 +1,6 @@
 """注册与登录业务。"""
+
+# 验证码校验成功后才执行密码验证，降低自动化撞库风险。
 from backend.core.config import Settings
 from backend.core.exceptions import BusinessError
 from backend.core.security import create_access_token, hash_password, verify_password

@@ -1,3 +1,4 @@
+# 配置测试确保非法环境名和非正数参数在应用启动前失败。
 import pytest
 from pydantic import ValidationError
 

@@ -1,4 +1,6 @@
 """密码哈希与 JWT 处理。"""
+
+# 密码只保存 Argon2 哈希，JWT 密钥仅从配置读取。
 from datetime import UTC, datetime, timedelta
 
 from argon2 import PasswordHasher

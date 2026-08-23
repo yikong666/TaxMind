@@ -1,3 +1,4 @@
+# 健康接口不依赖鉴权，用于容器和部署平台探活。
 from fastapi import APIRouter
 
 from backend.core.config import get_settings

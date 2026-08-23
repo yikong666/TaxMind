@@ -1,4 +1,6 @@
 """文档解析、分块及政策元数据确认。"""
+
+# 政策文档只有解析完成且元数据完整后才允许进入检索链路。
 from datetime import date
 
 from backend.core.config import Settings

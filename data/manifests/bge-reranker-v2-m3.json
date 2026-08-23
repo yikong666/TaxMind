@@ -1,0 +1,9 @@
+{
+  "name": "BGE Reranker v2 M3",
+  "repository": "BAAI/bge-reranker-v2-m3",
+  "source": "https://huggingface.co/BAAI/bge-reranker-v2-m3",
+  "license": "Apache-2.0",
+  "purpose": "TaxMind Hybrid Retrieval 候选结果的交叉编码重排序",
+  "local_path": "data/models/bge-reranker-v2-m3",
+  "download_command": "uv run python scripts/download_models.py"
+}

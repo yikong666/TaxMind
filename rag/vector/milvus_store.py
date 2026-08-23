@@ -1,4 +1,6 @@
 """TaxMind Milvus Collection 与批量入库。"""
+
+# Collection 同时维护 Dense 与 Sparse 索引，并保存可过滤政策元数据。
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -23,7 +25,8 @@ class VectorRecord:
 @dataclass(frozen=True)
 class SearchHit:
     id: str
-    score: float
+    hybrid_score: float
+    rerank_score: float | None
     child_id: int
     parent_id: int
     document_id: int
@@ -148,7 +151,8 @@ class MilvusVectorStore:
         return [
             SearchHit(
                 id=str(hit["id"]),
-                score=float(hit["distance"]),
+                hybrid_score=float(hit["distance"]),
+                rerank_score=None,
                 child_id=int(hit["entity"]["child_id"]),
                 parent_id=int(hit["entity"]["parent_id"]),
                 document_id=int(hit["entity"]["document_id"]),

@@ -1,3 +1,4 @@
+# 测试应用使用临时 SQLite、内存验证码和对象存储，保证用例相互隔离。
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine

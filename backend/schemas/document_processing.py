@@ -1,4 +1,6 @@
 """文档解析、Chunk 与政策元数据结构。"""
+
+# 输入参数在接口边界限制尺寸，避免异常配置拖垮解析任务。
 from datetime import date
 
 from pydantic import BaseModel, Field, HttpUrl

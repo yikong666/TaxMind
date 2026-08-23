@@ -7,6 +7,7 @@ import { getErrorMessage } from '@/api/http'
 import { useCaptcha } from '@/composables/useCaptcha'
 
 const form = reactive({ username: '', password: '', captcha_code: '' })
+// 提交期间锁定按钮，避免重复登录请求和验证码重复消费。
 const submitting = ref(false)
 const { captchaId, captchaImageUrl, captchaLoading, captchaError, refreshCaptcha } = useCaptcha()
 

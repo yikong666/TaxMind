@@ -1,4 +1,6 @@
 """用户数据模型。"""
+
+# 密码字段只保存不可逆哈希，不保存或记录明文密码。
 from sqlalchemy import Boolean, String
 from sqlalchemy.orm import Mapped, mapped_column
 

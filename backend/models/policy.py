@@ -1,4 +1,6 @@
 """税务政策元数据。"""
+
+# 文号、地区和有效期是政策引用与 P0 过滤的核心字段。
 from datetime import date
 from enum import StrEnum
 

@@ -1,4 +1,6 @@
 """图形验证码生成与 Redis 存储。"""
+
+# 验证码仅存储摘要并一次性消费，接口不会返回明文答案。
 import html
 import secrets
 import string

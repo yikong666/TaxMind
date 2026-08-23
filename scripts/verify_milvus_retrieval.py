@@ -1,9 +1,13 @@
 """使用合成向量验证 Milvus 时效与地区过滤，运行后自动清理。"""
+
+# 本脚本覆盖 active/expired/replaced、有效期和全国/地方组合场景。
+import gc
 from dataclasses import replace
 from datetime import date
 
 from backend.core.config import get_settings
 from rag.embedding.bge_m3 import BgeM3EmbeddingProvider
+from rag.reranking.bge_reranker import BgeReranker
 from rag.retrieval.filters import build_metadata_filter
 from rag.vector.milvus_store import MilvusVectorStore, VectorRecord
 
@@ -60,6 +64,9 @@ def main() -> None:
         for item, vector in zip(records, vectors[:-1], strict=True)
     ]
     query_vector = vectors[-1]
+    # CPU 环境串行释放召回模型，再加载 Reranker，避免两个大模型同时占用内存。
+    del embedding, vectors
+    gc.collect()
     try:
         store.replace_document(TEST_DOCUMENT_ID, records)
         expression = build_metadata_filter(
@@ -79,7 +86,16 @@ def main() -> None:
         expected = {"active-national", "active-chongqing", "internal-document"}
         if actual != expected:
             raise AssertionError(f"过滤结果错误：expected={expected}, actual={actual}")
+        reranker = BgeReranker(
+            settings.reranker_model_path,
+            settings.reranker_device,
+            settings.reranker_batch_size,
+        )
+        rerank_scores = reranker.score("重庆增值税优惠政策", [hit.text for hit in hits])
+        if len(rerank_scores) != len(hits):
+            raise AssertionError("Reranker 返回分数数量错误")
         print(f"Milvus P0 过滤验证通过：{sorted(actual)}")
+        print(f"Reranker 链路验证通过：scores={rerank_scores}")
     finally:
         store.replace_document(TEST_DOCUMENT_ID, [])
 

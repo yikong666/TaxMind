@@ -1,3 +1,4 @@
+# 认证测试覆盖验证码一次性消费、密码校验和重复用户名边界。
 from fastapi.testclient import TestClient
 from jose import jwt
 

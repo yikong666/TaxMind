@@ -1,4 +1,6 @@
 """SQLAlchemy 声明基类。"""
+
+# 通用时间字段由 Mixin 统一维护，避免各模型重复声明。
 from datetime import datetime
 
 from sqlalchemy import DateTime, func

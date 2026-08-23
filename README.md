@@ -62,7 +62,8 @@ npm run dev
 图片使用 OCR 提取文字；旧版 DOC/PPT 文件需先转换为 DOCX/PPTX。政策类文档只有在
 解析完成且必填政策元数据完整后才进入可检索状态，内部资料解析完成后即可检索。
 
-混合检索使用 BGE-M3 Dense/Sparse 两路召回和 Milvus WeightedRanker。当前政策检索仅
+混合检索使用 BGE-M3 Dense/Sparse 两路召回和 Milvus WeightedRanker，再由
+`bge-reranker-v2-m3` 对 Top-N 候选重排序并按 Parent Chunk 去重。当前政策检索仅
 允许 `active` 状态且在查询日期有效的政策；地方查询可同时使用全国政策和本地区政策，
 全国查询不会混入地方政策。Child Chunk 参与召回，接口返回对应 Parent Chunk 和引用元数据。
 

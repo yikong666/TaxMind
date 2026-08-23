@@ -7,15 +7,20 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 
 def main() -> None:
-    target = PROJECT_ROOT / "data" / "models" / "bge-m3"
-    snapshot_download(
-        repo_id="BAAI/bge-m3",
-        local_dir=target,
-        ignore_patterns=["*.msgpack", "*.h5", "onnx/*"],
-    )
-    print(f"BGE-M3 下载完成：{target}")
+    # 模型文件体积较大，统一放在 Git 忽略的运行时目录中。
+    models = [
+        ("BAAI/bge-m3", "bge-m3"),
+        ("BAAI/bge-reranker-v2-m3", "bge-reranker-v2-m3"),
+    ]
+    for repository, directory in models:
+        target = PROJECT_ROOT / "data" / "models" / directory
+        snapshot_download(
+            repo_id=repository,
+            local_dir=target,
+            ignore_patterns=["*.msgpack", "*.h5", "onnx/*"],
+        )
+        print(f"模型下载完成：{target}")
 
 
 if __name__ == "__main__":
     main()
-

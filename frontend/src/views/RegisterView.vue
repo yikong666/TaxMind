@@ -7,6 +7,7 @@ import { getErrorMessage } from '@/api/http'
 import { useCaptcha } from '@/composables/useCaptcha'
 
 const router = useRouter()
+// 注册成功后跳回登录页，失败时刷新一次性验证码。
 const submitting = ref(false)
 const form = reactive({ username: '', password: '', confirm_password: '', captcha_code: '' })
 const { captchaId, captchaImageUrl, captchaLoading, captchaError, refreshCaptcha } = useCaptcha()

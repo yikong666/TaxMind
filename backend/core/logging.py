@@ -1,4 +1,6 @@
 """控制台与文件双输出日志。"""
+
+# 控制台便于开发观察，滚动文件用于定位历史运行问题。
 import logging
 from logging.handlers import RotatingFileHandler
 

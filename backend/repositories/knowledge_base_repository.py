@@ -1,4 +1,6 @@
 """知识库与文档数据访问。"""
+
+# 所有读取均带 owner_id 条件，保证租户数据隔离。
 from __future__ import annotations
 
 from sqlalchemy import func, select

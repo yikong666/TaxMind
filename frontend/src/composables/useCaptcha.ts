@@ -4,6 +4,7 @@ import { fetchCaptcha } from '@/api/auth'
 import { getErrorMessage } from '@/api/http'
 
 export function useCaptcha() {
+  // 验证码状态封装为组合式函数，登录和注册页面复用刷新与异常处理。
   const captchaId = ref('')
   const captchaSvg = ref('')
   const captchaLoading = ref(false)

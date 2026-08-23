@@ -1,4 +1,6 @@
 """统一配置管理，敏感配置仅从环境变量或 .env 读取。"""
+
+# 所有外部服务地址和模型参数集中声明，禁止业务代码硬编码。
 from functools import lru_cache
 from pathlib import Path
 
@@ -58,6 +60,10 @@ class Settings(BaseSettings):
     embedding_batch_size: int = 8
     embedding_dense_dim: int = 1024
     reranker_model: str = "BAAI/bge-reranker-v2-m3"
+    reranker_model_path: Path = PROJECT_ROOT / "data" / "models" / "bge-reranker-v2-m3"
+    reranker_device: str = "cpu"
+    reranker_batch_size: int = 8
+    retrieval_candidate_k: int = 20
     default_top_k: int = 5
     default_history_rounds: int = 5
     faq_bm25_threshold: float = 0.85
@@ -88,6 +94,8 @@ class Settings(BaseSettings):
         "child_chunk_size",
         "embedding_batch_size",
         "embedding_dense_dim",
+        "reranker_batch_size",
+        "retrieval_candidate_k",
     )
     @classmethod
     def validate_positive_integer(cls, value: int) -> int:

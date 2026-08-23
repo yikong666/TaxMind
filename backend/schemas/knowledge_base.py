@@ -1,4 +1,6 @@
 """知识库与文档接口结构。"""
+
+# 对外仅暴露文档业务字段，不返回 MinIO object_key 等内部信息。
 from datetime import datetime
 
 from pydantic import BaseModel, Field, field_validator

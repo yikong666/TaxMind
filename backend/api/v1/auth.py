@@ -1,4 +1,6 @@
 """验证码、注册和登录接口。"""
+
+# 接口层仅完成参数映射，认证规则集中在 AuthService。
 from typing import Annotated
 
 from fastapi import APIRouter, Depends

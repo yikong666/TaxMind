@@ -1,4 +1,6 @@
 """混合检索接口结构。"""
+
+# 同时返回召回分数与重排序分数，便于效果评估和问题排查。
 from datetime import date
 
 from pydantic import BaseModel, Field, field_validator
@@ -25,6 +27,8 @@ class RetrievalRequest(BaseModel):
 class RetrievalHitData(BaseModel):
     vector_id: str
     score: float
+    hybrid_score: float
+    rerank_score: float
     child_id: int
     parent_id: int
     document_id: int
@@ -38,4 +42,3 @@ class RetrievalHitData(BaseModel):
     effective_end: int = 0
     policy_status: str
     source_url: str = ""
-

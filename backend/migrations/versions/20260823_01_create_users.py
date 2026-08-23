@@ -6,6 +6,8 @@ Revises:
 import sqlalchemy as sa
 from alembic import op
 
+# 首个迁移建立账号认证所需的最小用户表。
+
 revision: str = "20260823_01"
 down_revision: str | None = None
 branch_labels = None

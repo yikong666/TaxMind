@@ -1,5 +1,6 @@
 import axios from 'axios'
 
+// 所有前端请求统一走 Vite 代理和标准中文错误解析。
 export const http = axios.create({ baseURL: '/api/v1', timeout: 10_000 })
 
 export interface ApiResponse<T> { success: boolean; code: string; message: string; data: T }

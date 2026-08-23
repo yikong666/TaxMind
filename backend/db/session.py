@@ -1,4 +1,6 @@
 """数据库引擎及请求级会话。"""
+
+# 连接池启用失效探测，避免复用被 MySQL 关闭的连接。
 from collections.abc import Generator
 from functools import lru_cache
 

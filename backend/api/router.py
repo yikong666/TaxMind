@@ -1,3 +1,4 @@
+# 业务路由在此集中配置前缀和中文 OpenAPI 标签。
 from fastapi import APIRouter
 
 from backend.api.v1.auth import router as auth_router

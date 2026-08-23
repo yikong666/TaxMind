@@ -1,3 +1,4 @@
+# Alembic 复用应用配置和全部模型元数据生成、执行迁移。
 from logging.config import fileConfig
 
 from alembic import context

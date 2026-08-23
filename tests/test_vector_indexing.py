@@ -1,3 +1,4 @@
+# 向量化测试使用确定性向量替身验证状态回写和失败恢复。
 from fastapi.testclient import TestClient
 
 from rag.embedding.bge_m3 import BgeM3EmbeddingProvider, HybridEmbedding

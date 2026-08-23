@@ -1,4 +1,6 @@
 """统一异常类型与中文错误响应。"""
+
+# 可预期业务异常和未知系统异常使用不同错误码，避免泄露内部细节。
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 

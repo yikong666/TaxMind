@@ -1,3 +1,4 @@
+# 所有接口统一使用 success、code、message、data 四段响应。
 from pydantic import BaseModel
 
 

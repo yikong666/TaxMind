@@ -1,5 +1,6 @@
 import { http, type ApiResponse } from './http'
 
+// 类型定义与后端认证 Schema 保持一致，避免页面拼装原始响应。
 export interface CaptchaData { captcha_id: string; image_svg: string; expires_in: number }
 export interface LoginPayload { username: string; password: string; captcha_id: string; captcha_code: string }
 export interface RegisterPayload extends LoginPayload { confirm_password: string }

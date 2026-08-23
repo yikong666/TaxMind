@@ -1,4 +1,6 @@
 """多格式文档文本与标题结构提取。"""
+
+# 各格式最终归一为标题和正文，图片内容通过 OCR 提取。
 import re
 from dataclasses import dataclass
 from io import BytesIO

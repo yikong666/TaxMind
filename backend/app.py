@@ -1,4 +1,6 @@
 """FastAPI 应用工厂。"""
+
+# 应用工厂便于测试环境替换数据库、缓存和对象存储依赖。
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 

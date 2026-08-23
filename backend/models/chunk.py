@@ -1,4 +1,6 @@
 """Parent-Child 文档块模型。"""
+
+# Child 保存向量状态，Parent 保存生成回答所需的完整语义上下文。
 from enum import StrEnum
 
 from sqlalchemy import Enum, ForeignKey, Integer, String, Text, UniqueConstraint

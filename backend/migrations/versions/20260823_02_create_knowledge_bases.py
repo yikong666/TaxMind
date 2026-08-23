@@ -6,6 +6,8 @@ Revises: 20260823_01
 import sqlalchemy as sa
 from alembic import op
 
+# 文档对象本体存 MinIO，关系库只保存元信息和处理状态。
+
 revision: str = "20260823_02"
 down_revision: str | None = "20260823_01"
 branch_labels = None

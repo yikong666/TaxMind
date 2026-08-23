@@ -1,4 +1,6 @@
 """知识库管理和文档上传业务。"""
+
+# 数据库记录与 MinIO 对象必须同步创建和清理，避免孤儿文件。
 import os
 from pathlib import Path
 from uuid import uuid4

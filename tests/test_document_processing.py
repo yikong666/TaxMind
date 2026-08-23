@@ -1,3 +1,4 @@
+# 文档测试同时验证格式解析、Parent-Child 映射和政策元数据门禁。
 from io import BytesIO
 
 from docx import Document as DocxDocument

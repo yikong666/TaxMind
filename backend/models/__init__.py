@@ -1,3 +1,4 @@
+# Alembic 和 SQLAlchemy 通过此入口一次性加载全部模型元数据。
 from backend.models.chunk import ChildChunk, ParentChunk, VectorStatus
 from backend.models.document import Document, ParseStatus
 from backend.models.knowledge_base import KnowledgeBase, KnowledgeBaseType

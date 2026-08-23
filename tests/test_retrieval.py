@@ -3,6 +3,8 @@ from datetime import date
 import pytest
 from fastapi.testclient import TestClient
 
+from backend.core.exceptions import BusinessError
+from backend.services.retrieval import RetrievalService
 from rag.embedding.bge_m3 import HybridEmbedding
 from rag.retrieval.filters import build_metadata_filter
 from rag.vector.milvus_store import SearchHit
@@ -14,6 +16,12 @@ class FakeEmbedding:
         return [HybridEmbedding([1.0, 0.0], {9: 0.7}) for _ in texts]
 
 
+class FakeReranker:
+    def score(self, query: str, passages: list[str]) -> list[float]:
+        # 后出现的候选分数更高，用于验证服务确实采用重排序结果。
+        return [float(index) for index, _ in enumerate(passages)]
+
+
 class SearchStore:
     def __init__(self) -> None:
         self.expression = ""
@@ -23,7 +31,8 @@ class SearchStore:
         return [
             SearchHit(
                 id="doc-1-child-1",
-                score=0.91,
+                hybrid_score=0.91,
+                rerank_score=None,
                 child_id=1,
                 parent_id=1,
                 document_id=1,
@@ -41,6 +50,44 @@ class SearchStore:
                 },
             )
         ]
+
+
+class CandidateStore:
+    def hybrid_search(self, dense, sparse, expression, top_k, candidate_k):
+        return [
+            SearchHit(
+                id=f"hit-{index}",
+                hybrid_score=0.9 - index / 10,
+                rerank_score=None,
+                child_id=index,
+                parent_id=parent_id,
+                document_id=1,
+                text=f"候选 {index}",
+                parent_content=f"父块 {parent_id}",
+                metadata={"policy_status": "active"},
+            )
+            for index, parent_id in [(1, 10), (2, 10), (3, 20)]
+        ]
+
+
+class EmptyStore:
+    def hybrid_search(self, dense, sparse, expression, top_k, candidate_k):
+        return []
+
+
+class FixedReranker:
+    def score(self, query: str, passages: list[str]) -> list[float]:
+        return [0.2, 0.9, 0.8]
+
+
+class FailingReranker:
+    def score(self, query: str, passages: list[str]) -> list[float]:
+        raise RuntimeError("model failed")
+
+
+class OwnedRepository:
+    def get(self, knowledge_base_id: int, owner_id: int):
+        return object()
 
 
 def test_current_policy_filter_excludes_expired_and_replaced() -> None:
@@ -102,6 +149,7 @@ def test_hybrid_retrieval_returns_parent_context_and_citation(
     store = SearchStore()
     monkeypatch.setattr("backend.api.v1.retrieval.get_embedding_provider", lambda: FakeEmbedding())
     monkeypatch.setattr("backend.api.v1.retrieval.get_vector_store", lambda: store)
+    monkeypatch.setattr("backend.api.v1.retrieval.get_reranker", lambda: FakeReranker())
 
     response = client.post(
         "/api/v1/retrieval/search",
@@ -120,6 +168,8 @@ def test_hybrid_retrieval_returns_parent_context_and_citation(
     hit = response.json()["data"][0]
     assert hit["parent_content"] == "增值税优惠政策完整内容。"
     assert hit["doc_no"] == "财税〔2026〕1号"
+    assert hit["hybrid_score"] == 0.91
+    assert hit["rerank_score"] == 0.0
     assert "effective_start <= 20260823" in store.expression
     assert f"knowledge_base_id in [{knowledge_base_id}]" in store.expression
 
@@ -128,6 +178,7 @@ def test_retrieval_rejects_unowned_knowledge_base(client: TestClient, monkeypatc
     headers = authenticate(client)
     monkeypatch.setattr("backend.api.v1.retrieval.get_embedding_provider", lambda: FakeEmbedding())
     monkeypatch.setattr("backend.api.v1.retrieval.get_vector_store", lambda: SearchStore())
+    monkeypatch.setattr("backend.api.v1.retrieval.get_reranker", lambda: FakeReranker())
 
     response = client.post(
         "/api/v1/retrieval/search",
@@ -137,3 +188,55 @@ def test_retrieval_rejects_unowned_knowledge_base(client: TestClient, monkeypatc
     assert response.status_code == 404
     assert response.json()["code"] == "KNOWLEDGE_BASE_NOT_FOUND"
 
+
+def test_reranker_sorts_and_deduplicates_parent_context() -> None:
+    service = RetrievalService(
+        OwnedRepository(), FakeEmbedding(), CandidateStore(), FixedReranker(), candidate_k=20
+    )
+    hits = service.search(
+        owner_id=1,
+        query="增值税优惠",
+        knowledge_base_ids=[1],
+        region="全国",
+        query_date=date(2026, 8, 23),
+        tax_type=None,
+        taxpayer_type=None,
+        top_k=2,
+    )
+    assert [hit.id for hit in hits] == ["hit-2", "hit-3"]
+    assert [hit.rerank_score for hit in hits] == [0.9, 0.8]
+
+
+def test_reranker_failure_is_converted_to_business_error() -> None:
+    service = RetrievalService(
+        OwnedRepository(), FakeEmbedding(), CandidateStore(), FailingReranker(), candidate_k=20
+    )
+    with pytest.raises(BusinessError) as error:
+        service.search(
+            owner_id=1,
+            query="增值税优惠",
+            knowledge_base_ids=[1],
+            region="全国",
+            query_date=date(2026, 8, 23),
+            tax_type=None,
+            taxpayer_type=None,
+            top_k=2,
+        )
+    assert error.value.code == "RERANK_FAILED"
+
+
+def test_empty_recall_skips_reranker() -> None:
+    service = RetrievalService(
+        OwnedRepository(), FakeEmbedding(), EmptyStore(), FailingReranker(), candidate_k=20
+    )
+    hits = service.search(
+        owner_id=1,
+        query="不存在的问题",
+        knowledge_base_ids=[1],
+        region="全国",
+        query_date=date(2026, 8, 23),
+        tax_type=None,
+        taxpayer_type=None,
+        top_k=5,
+    )
+    assert hits == []

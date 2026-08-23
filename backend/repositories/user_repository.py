@@ -1,4 +1,6 @@
 """用户仓储。"""
+
+# 用户名唯一性由数据库约束和仓储查询共同保证。
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 

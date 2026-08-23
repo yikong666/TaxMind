@@ -1,4 +1,6 @@
 """知识库模型。"""
+
+# 知识库类型决定政策元数据完整性与检索过滤规则。
 from enum import StrEnum
 
 from sqlalchemy import Enum, ForeignKey, String, Text, UniqueConstraint

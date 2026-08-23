@@ -1,4 +1,6 @@
 """上传文档及处理状态模型。"""
+
+# 文档状态用于追踪上传、解析和后续向量化流水线。
 from enum import StrEnum
 
 from sqlalchemy import BigInteger, Enum, ForeignKey, Integer, String, Text

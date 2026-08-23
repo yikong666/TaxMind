@@ -1,4 +1,6 @@
 """BGE-M3 Dense/Sparse 向量化适配器。"""
+
+# 模型采用延迟加载，常规管理接口不会额外占用模型内存。
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol

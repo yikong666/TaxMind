@@ -1,4 +1,6 @@
 """标题层级优先的 Parent-Child Chunk。"""
+
+# 优先保持标题语义边界，超长段落才按长度和重叠窗口拆分。
 import re
 from dataclasses import dataclass
 

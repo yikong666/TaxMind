@@ -1,4 +1,6 @@
 """文档解析、Chunk 预览与政策元数据接口。"""
+
+# 大模型组件采用缓存单例，避免每次请求重复加载权重和连接 Milvus。
 from functools import lru_cache
 from typing import Annotated
 

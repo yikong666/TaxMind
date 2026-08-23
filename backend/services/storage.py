@@ -1,4 +1,6 @@
 """MinIO 私有对象存储适配。"""
+
+# 对象桶保持私有，业务接口只持久化不可猜测的 object_key。
 from typing import BinaryIO, Protocol
 
 from minio import Minio

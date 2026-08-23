@@ -1,4 +1,6 @@
 """跨模块 API 依赖。"""
+
+# 鉴权依赖统一校验 JWT，并向下游接口提供当前用户。
 from typing import Annotated
 
 from fastapi import Depends
