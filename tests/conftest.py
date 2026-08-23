@@ -12,7 +12,12 @@ from backend.db.base import Base
 from backend.db.session import get_db
 from backend.repositories.user_repository import UserRepository
 from backend.services.auth import AuthService
-from backend.services.captcha import CaptchaService, CaptchaStore, get_captcha_service
+from backend.services.captcha import (
+    CaptchaService,
+    CaptchaStore,
+    _captcha_digest,
+    get_captcha_service,
+)
 from backend.services.storage import ObjectStorage, get_object_storage
 
 
@@ -25,7 +30,7 @@ class MemoryCaptchaStore(CaptchaStore):
 
     def consume(self, captcha_id: str, code: str) -> bool:
         stored = self.values.pop(captcha_id, None)
-        return stored is not None and stored.upper() == code.strip().upper()
+        return stored is not None and stored == _captcha_digest(captcha_id, code)
 
 
 class MemoryObjectStorage(ObjectStorage):

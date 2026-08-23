@@ -12,6 +12,7 @@ from backend.core.exceptions import BusinessError
 from backend.models.document import Document
 from backend.models.knowledge_base import KnowledgeBase, KnowledgeBaseType
 from backend.repositories.knowledge_base_repository import KnowledgeBaseRepository
+from backend.services.file_validation import validate_file_content
 from backend.services.storage import ObjectStorage
 
 SUPPORTED_EXTENSIONS = {
@@ -79,8 +80,11 @@ class KnowledgeBaseService:
                 f"单个文件不能超过 {self.settings.max_upload_size_mb}MB", "FILE_TOO_LARGE"
             )
 
+        # 内容校验后恢复流位置，保证上传到 MinIO 的仍是完整原文件。
+        content = upload.file.read()
+        upload.file.seek(0)
+        content_type = validate_file_content(extension, content)
         object_key = f"knowledge-bases/{knowledge_base_id}/{uuid4().hex}{extension}"
-        content_type = upload.content_type or "application/octet-stream"
         self.storage.upload(object_key, upload.file, file_size, content_type)
         document = Document(
             knowledge_base_id=knowledge_base_id,

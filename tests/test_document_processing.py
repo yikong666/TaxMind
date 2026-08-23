@@ -139,15 +139,16 @@ def test_invalid_policy_period_is_rejected(client: TestClient) -> None:
     assert response.json()["code"] == "INVALID_EFFECTIVE_PERIOD"
 
 
-def test_legacy_doc_parse_failure_is_recorded(client: TestClient) -> None:
+def test_disguised_legacy_doc_is_rejected_before_parsing(client: TestClient) -> None:
     headers = authenticate(client)
     knowledge_base_id = create_knowledge_base(client, headers).json()["data"]["id"]
-    document_id = upload_document(
-        client, headers, knowledge_base_id, "legacy.doc", b"legacy", "application/msword"
+    response = client.post(
+        f"/api/v1/knowledge-bases/{knowledge_base_id}/documents",
+        headers=headers,
+        files={"files": ("legacy.doc", b"legacy", "application/msword")},
     )
-    response = client.post(f"/api/v1/documents/{document_id}/parse", headers=headers, json={})
     assert response.status_code == 400
-    assert response.json()["code"] == "DOCUMENT_PARSE_FAILED"
+    assert response.json()["code"] == "INVALID_FILE_CONTENT"
 
 
 def test_document_download_requires_owner_and_preserves_filename(client: TestClient) -> None:

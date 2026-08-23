@@ -45,9 +45,19 @@ def test_llm_structured_output_extracts_tax_fields_and_amount() -> None:
     result = QueryUnderstandingService(client).understand("重庆小规模纳税人本季度开票20万")
     assert result.intent == QueryIntent.TAX_CALCULATION
     assert result.amount == 200000
+    assert result.taxpayer_type == "小规模纳税人"
     assert result.risk_level == RiskLevel.LOW
     assert result.needs_clarification is False
     assert "只负责抽取信息" in client.system_prompt
+
+
+def test_unknown_filter_alias_is_dropped_instead_of_causing_zero_recall() -> None:
+    result = QueryUnderstandingService(
+        FakeLlmClient(response(taxpayer_type="一家普通公司", tax_type="未知税"))
+    ).understand("一家普通公司适用什么未知税政策？")
+    assert result.taxpayer_type is None
+    assert result.tax_type is None
+    assert result.needs_clarification is True
 
 
 def test_missing_information_returns_specific_clarification() -> None:

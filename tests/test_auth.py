@@ -6,7 +6,9 @@ from backend.core.config import get_settings
 
 
 def add_captcha(client: TestClient, captcha_id: str = "captcha-1", code: str = "A7K9") -> None:
-    client.captcha_store.values[captcha_id] = code  # type: ignore[attr-defined]
+    from backend.services.captcha import _captcha_digest
+
+    client.captcha_store.values[captcha_id] = _captcha_digest(captcha_id, code)  # type: ignore[attr-defined]
 
 
 def registration_payload(**overrides: str) -> dict[str, str]:

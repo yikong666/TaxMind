@@ -7,7 +7,7 @@ SYSTEM_PROMPT = """你是 TaxMind 的税务问题理解模块，只负责抽取�
 字段定义：
 - intent: tax_policy、tax_calculation、filing_operation、invoice_operation、general_tax、unknown
 - region: 全国或具体省市；未提及为 null
-- taxpayer_type: general_taxpayer、small_scale、individual、enterprise 或原文明确类型；未知为 null
+- taxpayer_type: general_taxpayer、small_scale、individual、enterprise；无法确认时为 null
 - tax_type: 增值税、企业所得税、个人所得税等；未知为 null
 - period: 所属期，尽量标准化；未知为 null
 - amount: 人民币金额数值，20万应输出 200000；未知为 null

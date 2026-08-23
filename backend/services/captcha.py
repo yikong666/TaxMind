@@ -1,6 +1,8 @@
 """图形验证码生成与 Redis 存储。"""
 
 # 验证码仅存储摘要并一次性消费，接口不会返回明文答案。
+import hashlib
+import hmac
 import html
 import secrets
 import string
@@ -29,16 +31,23 @@ class RedisCaptchaStore:
     def key(captcha_id: str) -> str:
         return f"taxmind:captcha:{captcha_id}"
 
-    def save(self, captcha_id: str, code: str, ttl_seconds: int) -> None:
-        self.client.setex(self.key(captcha_id), ttl_seconds, code)
+    def save(self, captcha_id: str, code_digest: str, ttl_seconds: int) -> None:
+        # Redis 泄露时也不能直接得到仍在有效期内的验证码明文。
+        self.client.setex(self.key(captcha_id), ttl_seconds, code_digest)
 
     def consume(self, captcha_id: str, code: str) -> bool:
         key = self.key(captcha_id)
         stored = self.client.getdel(key)
         if stored is None:
             return False
-        normalized = stored.decode() if isinstance(stored, bytes) else str(stored)
-        return secrets.compare_digest(normalized.upper(), code.strip().upper())
+        stored_digest = stored.decode() if isinstance(stored, bytes) else str(stored)
+        return secrets.compare_digest(stored_digest, _captcha_digest(captcha_id, code))
+
+
+def _captcha_digest(captcha_id: str, code: str) -> str:
+    """将验证码 ID 作为盐生成稳定摘要，供一次性常量时间比较。"""
+    normalized = code.strip().upper().encode("utf-8")
+    return hmac.new(captcha_id.encode("utf-8"), normalized, hashlib.sha256).hexdigest()
 
 
 @dataclass(frozen=True)
@@ -55,8 +64,10 @@ class CaptchaService:
 
     def create(self) -> CaptchaChallenge:
         captcha_id = str(uuid4())
-        code = "".join(secrets.choice(CAPTCHA_ALPHABET) for _ in range(4))
-        self.store.save(captcha_id, code, self.settings.captcha_expire_seconds)
+        code = "".join(secrets.choice(CAPTCHA_ALPHABET) for _ in range(6))
+        self.store.save(
+            captcha_id, _captcha_digest(captcha_id, code), self.settings.captcha_expire_seconds
+        )
         return CaptchaChallenge(
             captcha_id=captcha_id,
             image_svg=self._render_svg(code),

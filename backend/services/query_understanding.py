@@ -13,6 +13,7 @@ from rag.query_understanding.models import (
     QueryUnderstandingResult,
     RiskLevel,
 )
+from rag.query_understanding.normalization import normalize_tax_type, normalize_taxpayer_type
 from rag.query_understanding.prompt import SYSTEM_PROMPT
 
 logger = logging.getLogger("taxmind.query_understanding")
@@ -68,6 +69,9 @@ class QueryUnderstandingService:
                 "问题理解服务暂不可用", "QUERY_UNDERSTANDING_UNAVAILABLE", 502
             ) from exc
 
+        # LLM 可能返回英文枚举或口语别名，检索前统一为知识库中的中文元数据。
+        understood.tax_type = normalize_tax_type(understood.tax_type)
+        understood.taxpayer_type = normalize_taxpayer_type(understood.taxpayer_type)
         risk_level = self._conservative_risk(query, understood.risk_level)
         missing_fields = [
             field

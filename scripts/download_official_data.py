@@ -22,8 +22,10 @@ def extract_text(html: str) -> str:
     soup = BeautifulSoup(html, "html.parser")
     for node in soup(["script", "style", "noscript"]):
         node.decompose()
-    lines = [line.strip() for line in soup.get_text("\n").splitlines() if line.strip()]
-    return "\n".join(dict.fromkeys(lines))
+    # 优先使用正文语义容器；保留重复条款，因为政策原文中的重复可能具有法律意义。
+    body = soup.find("article") or soup.find("main") or soup.body or soup
+    lines = [line.strip() for line in body.get_text("\n").splitlines() if line.strip()]
+    return "\n".join(lines)
 
 
 def download_sources(client: httpx.Client, sources: list[dict], retries: int = 3) -> list[dict]:

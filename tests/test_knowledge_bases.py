@@ -3,7 +3,11 @@ from fastapi.testclient import TestClient
 
 
 def authenticate(client: TestClient, username: str = "kb_user") -> dict[str, str]:
-    client.captcha_store.values["register-captcha"] = "A7K9"  # type: ignore[attr-defined]
+    from backend.services.captcha import _captcha_digest
+
+    client.captcha_store.values["register-captcha"] = _captcha_digest(  # type: ignore[attr-defined]
+        "register-captcha", "A7K9"
+    )
     register = client.post(
         "/api/v1/auth/register",
         json={
@@ -15,7 +19,9 @@ def authenticate(client: TestClient, username: str = "kb_user") -> dict[str, str
         },
     )
     assert register.status_code == 201
-    client.captcha_store.values["login-captcha"] = "B8M4"  # type: ignore[attr-defined]
+    client.captcha_store.values["login-captcha"] = _captcha_digest(  # type: ignore[attr-defined]
+        "login-captcha", "B8M4"
+    )
     login = client.post(
         "/api/v1/auth/login",
         json={
@@ -130,6 +136,18 @@ def test_upload_rejects_unsupported_or_empty_files(client: TestClient) -> None:
     assert unsupported.json()["code"] == "UNSUPPORTED_FILE_TYPE"
     assert empty.status_code == 400
     assert empty.json()["code"] == "EMPTY_FILE"
+
+
+def test_upload_rejects_extension_disguised_content(client: TestClient) -> None:
+    headers = authenticate(client, "file_validation")
+    knowledge_base_id = create_knowledge_base(client, headers).json()["data"]["id"]
+    response = client.post(
+        f"/api/v1/knowledge-bases/{knowledge_base_id}/documents",
+        headers=headers,
+        files={"files": ("fake.pdf", b"this is not a pdf", "application/pdf")},
+    )
+    assert response.status_code == 400
+    assert response.json()["code"] == "INVALID_FILE_CONTENT"
 
 
 def test_users_cannot_access_each_others_knowledge_bases(client: TestClient) -> None:

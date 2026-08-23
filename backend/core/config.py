@@ -34,6 +34,8 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 120
     captcha_expire_seconds: int = 300
+    auth_rate_limit_attempts: int = 10
+    auth_rate_limit_window_seconds: int = 300
     redis_host: str = "127.0.0.1"
     redis_port: int = 6379
     redis_password: SecretStr = SecretStr("")
@@ -91,6 +93,8 @@ class Settings(BaseSettings):
         "default_history_rounds",
         "access_token_expire_minutes",
         "captcha_expire_seconds",
+        "auth_rate_limit_attempts",
+        "auth_rate_limit_window_seconds",
         "max_upload_size_mb",
         "parent_chunk_size",
         "child_chunk_size",

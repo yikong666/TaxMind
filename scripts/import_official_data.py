@@ -14,7 +14,17 @@ logger = logging.getLogger("taxmind.data.import")
 def import_sources(
     client: httpx.Client, base_url: str, knowledge_base_id: int, sources: list[dict]
 ) -> None:
+    detail = client.get(f"{base_url}/knowledge-bases/{knowledge_base_id}")
+    detail.raise_for_status()
+    existing_urls = {
+        item.get("policy_metadata", {}).get("source_url")
+        for item in detail.json()["data"].get("documents", [])
+        if item.get("policy_metadata")
+    }
     for source in sources:
+        if source["url"] in existing_urls:
+            logger.info("官方政策已存在，跳过 source_id=%s", source["id"])
+            continue
         path = ROOT / "data" / "processed" / "official" / f"{source['id']}.md"
         if not path.exists():
             logger.warning("跳过未下载来源 source_id=%s", source["id"])
