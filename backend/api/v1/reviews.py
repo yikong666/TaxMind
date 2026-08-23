@@ -2,11 +2,12 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from backend.api.dependencies import CurrentUser
 from backend.db.session import get_db
+from backend.models.review import TicketStatus
 from backend.repositories.review_repository import ReviewRepository
 from backend.schemas.common import ApiResponse
 from backend.schemas.review import (
@@ -61,8 +62,14 @@ def handoff(
 
 
 @router.get("/tickets", response_model=ApiResponse[list[TicketData]])
-def list_tickets(user: CurrentUser, session: Annotated[Session, Depends(get_db)]):
-    return ApiResponse(data=[ticket_data(item) for item in service(session).list_tickets(user.id)])
+def list_tickets(
+    user: CurrentUser,
+    session: Annotated[Session, Depends(get_db)],
+    status: TicketStatus | None = None,
+    risk_level: Annotated[str | None, Query(max_length=20)] = None,
+):
+    items = service(session).list_tickets(user.id, status=status, risk_level=risk_level)
+    return ApiResponse(data=[ticket_data(item) for item in items])
 
 
 @router.get("/tickets/{ticket_id}", response_model=ApiResponse[TicketData])

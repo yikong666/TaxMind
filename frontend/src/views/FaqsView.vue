@@ -72,7 +72,7 @@ onMounted(refresh)
 
 <template>
   <main class="management-page faq-page">
-    <header class="management-header"><div class="management-brand"><span>税</span><div><strong>TaxMind</strong><small>高频问答运营</small></div></div><nav><el-button text @click="router.push('/knowledge-bases')">知识库管理</el-button><el-button text :icon="ArrowLeft" @click="router.push('/chat')">返回智能问答</el-button></nav></header>
+    <header class="management-header"><div class="management-brand"><span>税</span><div><strong>TaxMind</strong><small>高频问答运营</small></div></div><nav><el-button text @click="router.push('/tickets')">人工工单</el-button><el-button text @click="router.push('/knowledge-bases')">知识库管理</el-button><el-button text :icon="ArrowLeft" @click="router.push('/chat')">返回智能问答</el-button></nav></header>
     <section class="management-content" v-loading="loading">
       <div class="page-heading"><div><p>FAQ OPERATIONS</p><h1>高频问答管理</h1><span>维护标准答案，命中后优先于 RAG 检索直接返回</span></div><el-button type="primary" :icon="Plus" @click="openEditor()">新增 FAQ</el-button></div>
       <div class="metric-grid"><article><span>当前结果</span><strong>{{ items.length }}</strong></article><article><span>已启用</span><strong>{{ enabledCount }}</strong></article><article><span>已过适用期</span><strong>{{ expiredCount }}</strong></article></div>

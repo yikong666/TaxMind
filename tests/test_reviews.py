@@ -80,6 +80,12 @@ def test_handoff_ticket_status_flow_and_owner_isolation(client: TestClient, monk
         f"/api/v1/tickets/{ticket_id}", headers=first, json={"status": "processing"}
     )
     assert processing.json()["data"]["status"] == "processing"
+    filtered = client.get("/api/v1/tickets", headers=first, params={"status": "processing"})
+    assert [item["id"] for item in filtered.json()["data"]] == [ticket_id]
+    assert (
+        client.get("/api/v1/tickets", headers=first, params={"status": "pending"}).json()["data"]
+        == []
+    )
     no_resolution = client.patch(
         f"/api/v1/tickets/{ticket_id}", headers=first, json={"status": "resolved"}
     )

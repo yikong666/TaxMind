@@ -84,8 +84,8 @@ class ReviewService:
         logger.info("人工工单已创建 message_id=%s owner_id=%s", message.id, owner_id)
         return self.repository.save(ticket)
 
-    def list_tickets(self, owner_id: int):
-        return self.repository.list_tickets(owner_id)
+    def list_tickets(self, owner_id: int, **filters):
+        return self.repository.list_tickets(owner_id, **filters)
 
     def get_ticket(self, ticket_id: int, owner_id: int):
         ticket = self.repository.get_ticket(ticket_id, owner_id)

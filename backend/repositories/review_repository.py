@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from backend.models.conversation import ChatMessage, Conversation, MessageRole
-from backend.models.review import MessageFeedback, ReviewTicket
+from backend.models.review import MessageFeedback, ReviewTicket, TicketStatus
 
 
 # 所有消息查询均联结会话 owner_id，防止跨用户反馈或转人工。
@@ -54,14 +54,18 @@ class ReviewRepository:
             )
         )
 
-    def list_tickets(self, owner_id: int) -> list[ReviewTicket]:
-        return list(
-            self.session.scalars(
-                select(ReviewTicket)
-                .where(ReviewTicket.owner_id == owner_id)
-                .order_by(ReviewTicket.created_at.desc())
-            )
-        )
+    def list_tickets(
+        self,
+        owner_id: int,
+        status: TicketStatus | None = None,
+        risk_level: str | None = None,
+    ) -> list[ReviewTicket]:
+        statement = select(ReviewTicket).where(ReviewTicket.owner_id == owner_id)
+        if status is not None:
+            statement = statement.where(ReviewTicket.status == status)
+        if risk_level:
+            statement = statement.where(ReviewTicket.risk_level == risk_level)
+        return list(self.session.scalars(statement.order_by(ReviewTicket.created_at.desc())))
 
     def save(self, item):
         self.session.add(item)
