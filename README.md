@@ -21,6 +21,7 @@ MySQL、Redis、Milvus、etcd、MinIO 的本地 Docker 编排。
 Copy-Item .env.example .env
 uv sync
 docker compose up -d
+uv run alembic upgrade head
 ```
 
 启动后端：
@@ -39,6 +40,12 @@ npm run dev
 
 后端接口文档位于 `http://127.0.0.1:8000/docs`，前端位于
 `http://127.0.0.1:5173`，MinIO 管理控制台位于 `http://127.0.0.1:9001`。
+
+当前账号模块提供以下接口：
+
+- `GET /api/v1/auth/captcha`：获取一次性图形验证码
+- `POST /api/v1/auth/register`：注册账号
+- `POST /api/v1/auth/login`：登录并获取 JWT
 
 ## 测试
 

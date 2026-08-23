@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     mysql_user: str = "taxmind"
     mysql_password: SecretStr = SecretStr("")
     mysql_database: str = "taxmind"
+    jwt_secret_key: SecretStr = SecretStr("development-only-change-me")
+    jwt_algorithm: str = "HS256"
+    access_token_expire_minutes: int = 120
+    captcha_expire_seconds: int = 300
     redis_host: str = "127.0.0.1"
     redis_port: int = 6379
     redis_password: SecretStr = SecretStr("")
@@ -50,6 +54,14 @@ class Settings(BaseSettings):
     default_history_rounds: int = 5
     faq_bm25_threshold: float = 0.85
 
+    @property
+    def database_url(self) -> str:
+        password = self.mysql_password.get_secret_value()
+        return (
+            f"mysql+pymysql://{self.mysql_user}:{password}@"
+            f"{self.mysql_host}:{self.mysql_port}/{self.mysql_database}?charset=utf8mb4"
+        )
+
     @field_validator("app_env")
     @classmethod
     def validate_environment(cls, value: str) -> str:
@@ -58,7 +70,12 @@ class Settings(BaseSettings):
             raise ValueError(f"APP_ENV 必须是 {sorted(allowed)} 之一")
         return value
 
-    @field_validator("default_top_k", "default_history_rounds")
+    @field_validator(
+        "default_top_k",
+        "default_history_rounds",
+        "access_token_expire_minutes",
+        "captcha_expire_seconds",
+    )
     @classmethod
     def validate_positive_integer(cls, value: int) -> int:
         if value <= 0:
